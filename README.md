@@ -1,4 +1,4 @@
-#YouTube Downloader
+# YouTube Downloader
 
 This python program periodically checks youtube for new videos in a users subscription feed. It will then move it to a designated folder with a video thumbnail and a channel poster. 
 
@@ -6,7 +6,7 @@ This was designed to work with Plex and this [plugin] (https://github.com/ZeroQI
 
 Please download and install both if using with Plex.
 
-##Install
+## Install
 
 To install first download this repo, in the upper right of this repo click 'Download zip
 
@@ -41,7 +41,7 @@ If you have a fairly smallish amount of subscriptions then you can chose the 'se
 
 It will then take you through some config options
 
-##Running
+## Running
 
 I'm working on a better way to run it right now but for now type this into a terminal or command prompt
 

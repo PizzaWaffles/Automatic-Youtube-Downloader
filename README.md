@@ -1,5 +1,5 @@
 #YouTube Downloader
-##Description
+
 This python program periodically checks youtube for new videos in a users subscription feed. It will then move it to a designated folder with a video thumbnail and a channel poster. 
 This was designed to work with Plex and this [plugin] (https://github.com/ZeroQI/YouTube-Agent.bundle) and this [scanner] (https://github.com/ZeroQI/Absolute-Series-Scanner)
 Please download and install both if using with Plex.

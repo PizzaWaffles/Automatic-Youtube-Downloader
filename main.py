@@ -60,7 +60,7 @@ def load_configs(configFile):
 def get_icons(channel, chid, overwrite=False):
 	if len(channel) == 0:
 		#Skip check for icon file if we are doing a single channel
-		destinationDir = destinationFolder + channel + '/'
+		destinationDir = DESTINATION_FOLDER + channel + '/'
 		if not os.path.exists(destinationDir):
 			print("Creating Source Directory")
 			os.makedirs(destinationDir)
@@ -68,7 +68,7 @@ def get_icons(channel, chid, overwrite=False):
 			print("Downloading new icon for poster")
 			url_data = urlopen(
 				'https://www.googleapis.com/youtube/v3/channels?part=snippet&id='
-				+ chid + '&fields=items%2Fsnippet%2Fthumbnails&key=' + api_key)
+				+ chid + '&fields=items%2Fsnippet%2Fthumbnails&key=' + API_KEY)
 			data = url_data.read()
 			data = json.loads(data.decode('utf-8'))
 			icon_url = data['items'][0]['snippet']['thumbnails']['high']['url']
@@ -98,7 +98,7 @@ def get_icons(channel, chid, overwrite=False):
 					print("Downloading new icon for poster: " + channel[j] + " | " + chid[j])
 					url_data = urlopen(
 						'https://www.googleapis.com/youtube/v3/channels?part=snippet&id='
-						+ chid[j] + '&fields=items%2Fsnippet%2Fthumbnails&key=' + api_key)
+						+ chid[j] + '&fields=items%2Fsnippet%2Fthumbnails&key=' + API_KEY)
 					data = url_data.read()
 					data = json.loads(data.decode('utf-8'))
 					icon_url = data['items'][0]['snippet']['thumbnails']['high']['url']

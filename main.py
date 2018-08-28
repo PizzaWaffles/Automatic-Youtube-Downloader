@@ -124,10 +124,7 @@ def main():
 	while True:
 		now = datetime.datetime.now()
 
-		if START_HOUR == 0:
-			START_HOUR = now.hour
-
-		if now.hour == START_HOUR:      # Run once a day at this hour
+		if now.hour == START_HOUR or START_HOUR == 0:      # Run once a day at this hour or skip check if we are using delay
 			data = lp.parse("data/youtubeData.xml")
 
 			# init for usage outside of this for loop
@@ -258,7 +255,7 @@ def main():
 								print()
 				print()
 		print("Going to sleep")
-		time.sleep(DELAY * 60)  
+		time.sleep(DELAY * 60 * 60)  
 
 
 if __name__ == "__main__":

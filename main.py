@@ -36,6 +36,7 @@ def load_configs(configFile):
 	global NUM_VIDEOS
 	global DESTINATION_FOLDER
 	global API_KEY
+	global DELAY
 
 	with open(configFile) as f:
 		for line in f:
@@ -121,6 +122,11 @@ def get_icons(channel, chid, overwrite=False):
 
 def main():
 	global START_HOUR
+	global NUM_VIDEOS
+	global DESTINATION_FOLDER
+	global API_KEY
+	global DELAY
+
 	while True:
 		now = datetime.datetime.now()
 

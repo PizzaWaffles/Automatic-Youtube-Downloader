@@ -261,7 +261,7 @@ def main():
 								print()
 				print()
 		print("Going to sleep")
-		time.sleep(DELAY * 60 * 60)  
+		time.sleep(DELAY * 60)
 
 
 if __name__ == "__main__":

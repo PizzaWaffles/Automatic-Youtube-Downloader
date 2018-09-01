@@ -233,7 +233,7 @@ def main():
 		print("""
 	    1. First Time Install
 	    2. Channel Selection
-	    3.Exit/Quit
+	    3. Exit/Quit
 	    """)
 
 		menuSelection = get_input("What would you like to do? ")

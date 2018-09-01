@@ -27,11 +27,16 @@ NUM_VIDEOS = 0
 DESTINATION_FOLDER = ""
 API_KEY = ""
 DELAY = 0
+FORMAT = ""
+FILE_FORMAT = ""
+DESTINATION_FORMAT = ""
 
 configFile = 'data/config'
 logFileName = "data/log.txt"
 if not os.path.isfile('data/log.txt'):
 	open('data/log.txt', 'a').close()
+if not os.path.isfile('data/icon_log.txt'):
+	open('data/icon_log.txt', 'a').close()
 if not os.path.exists('Download/'):
 	os.makedirs('Download/')
 
@@ -42,6 +47,9 @@ def load_configs(configFile):
 	global DESTINATION_FOLDER
 	global API_KEY
 	global DELAY
+	global FORMAT
+	global FILE_FORMAT
+	global DESTINATION_FORMAT
 
 	try:
 		with open(configFile) as f:
@@ -62,6 +70,15 @@ def load_configs(configFile):
 				elif line.find("DELAY") != -1:
 					data = line.split("=")
 					DELAY = int(data[1])
+				elif line.find("FILE_FORMAT") != -1:
+					data = line.split("=")
+					FILE_FORMAT = str(data[1])
+				elif line.find("VIDEO_FORMAT") != -1:
+					data = line.split("=")
+					FORMAT = str(data[1])
+				elif line.find("DESTINATION_FORMAT") != -1:
+					data = line.split("=")
+					DESTINATION_FORMAT = str(data[1])
 	except Exception as e:
 		print("Cannot find config file!!")
 		print("Error dump in error.log")
@@ -76,41 +93,49 @@ def load_configs(configFile):
 
 
 def get_icons(channel, chid, overwrite=False):
-	if len(channel) == 0:
-		#Skip check for icon file if we are doing a single channel
-		destinationDir = DESTINATION_FOLDER + channel + '/'
-		if not os.path.exists(destinationDir):
-			print("Creating Source Directory")
-			os.makedirs(destinationDir)
-		try:
-			print("Downloading new icon for poster")
-			url_data = urlopen(
-				'https://www.googleapis.com/youtube/v3/channels?part=snippet&id='
-				+ chid + '&fields=items%2Fsnippet%2Fthumbnails&key=' + API_KEY)
-			data = url_data.read()
-			data = json.loads(data.decode('utf-8'))
-			icon_url = data['items'][0]['snippet']['thumbnails']['high']['url']
-			with open("poster.jpg", 'wb') as f:
-				f.write(request.urlopen(icon_url).read())
+	icon_log = open('data/icon_log.txt', 'r')
+	downloaded = icon_log.readlines()
+	icon_log.close()
 
-			print("Moving Icon...")
-			shutil.move('poster.jpg', destinationDir + 'poster.jpg')
-		except Exception as e:
-			print("An error occured moving Icon")
-			print("Error dump in error.log")
-			with open('error.log', 'a+') as f:
-				f.write(str(datetime.now()) + '\n')
-				f.write(str(e))
-				f.write(traceback.format_exc())
-				f.write("\n\n----------VAR DUMP--------\n\n")
-				pprint(globals(), stream=f)
-				pprint(locals(), stream=f)
+	if len(channel) == 0:
+		if not chid in downloaded:
+			destinationDir = os.path.join('Download', channel[0])
+			if not os.path.exists(destinationDir):
+				os.makedirs(destinationDir)
+			if not os.path.exists(destinationDir):
+				print("Creating Source Directory")
+				os.makedirs(destinationDir)
+			try:
+				print("Downloading new icon for poster")
+				url_data = urlopen(
+					'https://www.googleapis.com/youtube/v3/channels?part=snippet&id='
+					+ chid + '&fields=items%2Fsnippet%2Fthumbnails&key=' + API_KEY)
+				data = url_data.read()
+				data = json.loads(data.decode('utf-8'))
+				icon_url = data['items'][0]['snippet']['thumbnails']['high']['url']
+				with open(destinationDir + "/poster.jpg", 'wb') as f:
+					f.write(request.urlopen(icon_url).read())
+				with open('data/icon_log.txt', 'a') as f:
+					f.write(chid[0] + '\n')
+				#print("Moving Icon...")
+				#destinationDir = parseFormat(DESTINATION_FORMAT)
+				#destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
+				#shutil.move('poster.jpg', DESTINATION_FOLDER + 'poster.jpg')
+			except Exception as e:
+				print("An error occured")
+				print("Error dump in error.log")
+				with open('error.log', 'a+') as f:
+					f.write(str(datetime.now()) + '\n')
+					f.write(str(e))
+					f.write(traceback.format_exc())
+					f.write("\n\n----------VAR DUMP--------\n\n")
+					pprint(globals(), stream=f)
+					pprint(locals(), stream=f)
 	else:
 		for j in range(0, len(channel)):
-			destinationDir = DESTINATION_FOLDER + channel[j] + ' [Youtube-' + chid[j] + ']/'
-			if not os.path.exists(destinationDir + 'poster.jpg') or overwrite:
+			if not (chid in downloaded) or overwrite:
+				destinationDir = os.path.join('Download', channel[j])
 				if not os.path.exists(destinationDir):
-					print("Creating Source Directory")
 					os.makedirs(destinationDir)
 				try:
 					print("Downloading new icon for poster: " + channel[j] + " | " + chid[j])
@@ -120,14 +145,14 @@ def get_icons(channel, chid, overwrite=False):
 					data = url_data.read()
 					data = json.loads(data.decode('utf-8'))
 					icon_url = data['items'][0]['snippet']['thumbnails']['high']['url']
-					with open("poster.jpg", 'wb') as f:
+					with open(destinationDir + "\poster.jpg", 'wb') as f:
 						f.write(request.urlopen(icon_url).read())
 
-					print("Moving Icon...")
-					#shutil.move('poster.jpg', destinationDir + 'poster.jpg')
-					safecopy('poster.jpg', destinationDir + 'poster.jpg')
+					with open('data/icon_log.txt', 'a+') as f:
+						f.write(chid[j] + '\n')
+
 				except Exception as e:
-					print("An error occured moving Icon")
+					print("An error occured")
 					print("Error dump in error.log")
 					with open('error.log', 'a+') as f:
 						f.write(str(datetime.now()) + '\n')
@@ -138,12 +163,39 @@ def get_icons(channel, chid, overwrite=False):
 						pprint(locals(), stream=f)
 			print()
 
+
 def safecopy(src, dst):
-    if os.path.isdir(dst):
-        dst = os.path.join(dst, os.path.basename(src))
-    shutil.copyfile(src, dst)
+	if os.path.isdir(dst):
+		dst = os.path.join(dst, os.path.basename(src))
+	shutil.copyfile(src, dst)
 
 
+def parseFormat(formating, name="", date="", title="", chID="", id=""):
+	'''
+		Supported tags:
+	%NAME
+	%UPLOAD_DATE
+	%TITLE
+	%CHANNEL_ID
+	%VIDEO_ID
+	'''
+
+	formating = formating.split('%')
+	result = ""
+	for f in formating:
+		if f.find('NAME') is not -1:
+			result += f.replace("NAME", name)
+		elif f.find("UPLOAD_DATE") is not -1:
+			result += f.replace("UPLOAD_DATE", date)
+		elif f.find("TITLE") is not -1:
+			result += f.replace("TITLE", title)
+		elif f.find("CHANNEL_ID") is not -1:
+			result += f.replace("CHANNEL_ID", chID)
+		elif f.find("VIDEO_ID") is not -1:
+			result += f.replace("VIDEO_ID", id)
+		else:
+			result += f
+	return result
 
 
 def main():
@@ -152,6 +204,8 @@ def main():
 	global DESTINATION_FOLDER
 	global API_KEY
 	global DELAY
+	global FORMAT
+	global FILE_FORMAT
 
 	while True:
 		now = datetime.now()
@@ -173,7 +227,8 @@ def main():
 			get_icons(xmltitle, channelIDlist)
 
 			for i in range(0, len(xmltitle)):  # for every channel
-				print(xmltitle[i])
+				uploader = xmltitle[i]
+				print(uploader)
 
 				url_data = urlopen(xmlurl[i], )
 				url_data = url_data.read()
@@ -190,6 +245,7 @@ def main():
 						video_download_count += 1
 						title = v.title.string
 						url = v.link.get('href')
+						upload_date = v.published.string.split('T')[0]
 
 						id = v.id.string
 						channelID = str(v.find('yt:channelid').contents[0])
@@ -200,25 +256,27 @@ def main():
 						if id in logFileContents:
 							print("Video Already downloaded")
 						else:
+							filename_format = parseFormat(FILE_FORMAT, uploader, upload_date, title, channelID, id)
+
 							print("Downloading - " + title + "  |  " + id)
 							print("Channel - " + str(xmltitle[i]) + "  |  " + channelID)
 
 							if os.name == 'nt': # if windows use supplied ffmpeg
 								ydl_opts = {
-									'outtmpl': 'Download/%(uploader)s - [' + channelID + ']/%(title)s - [%(id)s].%(ext)s',  # need to put channelid in here because what youtube-dl gives may be incorrect
+									'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',  # need to put channelid in here because what youtube-dl gives may be incorrect
 									#'simulate': 'true',
 									'writethumbnail': 'true',
 									'forcetitle': 'true',
 									'ffmpeg_location': './ffmpeg/bin/',
-									'format': '248+251/best'
+									'format': FORMAT
 								}
 							else:
 								# not sure here
 								ydl_opts = {
-									'outtmpl': 'Download/%(uploader)s - [' + channelID + ']/%(title)s - [%(id)s].%(ext)s',
+									'outtmpl': 'Download/' + filename_format + '.%(ext)s',
 									'writethumbnail': 'true',
 									'forcetitle': 'true',
-									'format': '248+251/best'
+									'format': FORMAT
 								}
 							try:
 								with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -245,25 +303,11 @@ def main():
 									f.write("\n\n----------VAR DUMP--------\n\n")
 									pprint(globals(), stream=f)
 									pprint(locals(), stream=f)
-							#if video_title is not None:  # should be the same but just in case
-							#	title = video_title
-							#title = ''.join(c for c in title if c in valid_chars)       # make sure all the chars are valid for windows
-
-							#if glob.glob('*' + video_id + '.mp4'):
-							#	extension = ".mp4"
-							#else:
-							#	extension = ".webm"
-							#title = glob.glob('*' + video_id + '*')[0]
-							#title = title[0:len(title)-5]
-							#title = title[0:len(title)-len(video_id)-1]
-
-
-							#destVideoName = title + " - [" + video_id +"]" + extension
-							#destThumbName = title + " - [" + video_id +"].jpg"
 
 							if not skip_download:
-								sourceDir = 'Download/' + uploader + ' - [' + channelID + ']/'
-								destinationDir = DESTINATION_FOLDER + uploader + ' [Youtube-' + channelID + ']/'
+								sourceDir = 'Download/' + uploader + '/'
+								destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
+								destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
 
 								if not os.path.exists(destinationDir):
 									print("Creating Source Directory")
@@ -296,8 +340,13 @@ def main():
 										pprint(locals(), stream=f)
 								print()
 				print()
-		print("Going to sleep")
-		time.sleep(DELAY * 60)
+		else:
+			print("Going to sleep")
+			if DELAY == 0:
+				time.sleep(60*60*60) # Sleep for an hour
+			else:
+				time.sleep(DELAY * 60)
+
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ import glob
 import traceback
 import json
 from distutils.dir_util import copy_tree
-import datetime
+from datetime import datetime
 import time
 import sys
 from pprint import pprint
@@ -122,7 +122,7 @@ def get_icons(channel, chid, overwrite=False):
 def main():
 	global START_HOUR
 	while True:
-		now = datetime.datetime.now()
+		now = datetime.now()
 
 		if START_HOUR == 0:
 			START_HOUR = now.hour

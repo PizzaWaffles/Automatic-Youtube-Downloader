@@ -12,6 +12,7 @@ import time
 import sys
 from pprint import pprint
 
+
 # Support for both python 2 and 3
 if sys.version_info[0] == 3:
 	from urllib.request import urlopen
@@ -107,7 +108,8 @@ def get_icons(channel, chid, overwrite=False):
 						f.write(request.urlopen(icon_url).read())
 
 					print("Moving Icon...")
-					shutil.move('poster.jpg', destinationDir + 'poster.jpg')
+					#shutil.move('poster.jpg', destinationDir + 'poster.jpg')
+					safecopy('poster.jpg', destinationDir + 'poster.jpg')
 				except Exception as e:
 					print("An error occured moving Icon")
 					print("Error dump in error.log")
@@ -119,6 +121,14 @@ def get_icons(channel, chid, overwrite=False):
 						pprint(globals(), stream=f)
 						pprint(locals(), stream=f)
 			print()
+
+def safecopy(src, dst):
+    if os.path.isdir(dst):
+        dst = os.path.join(dst, os.path.basename(src))
+    shutil.copyfile(src, dst)
+
+
+
 
 def main():
 	global START_HOUR
@@ -239,7 +249,12 @@ def main():
 									os.makedirs(destinationDir)
 								try:
 									print("Moving Folder...")
-									copy_tree(sourceDir, destinationDir)
+									#copy_tree(sourceDir, destinationDir)
+
+									#iterate through source and copy each
+									for filename in os.listdir(sourceDir):
+										safecopy(os.path.join(sourceDir, filename), destinationDir)
+
 									shutil.rmtree(sourceDir, ignore_errors=True)
 									#shutil.move(videoName, destination + destVideoName)
 									#shutil.move(thumbName, destination + destThumbName)

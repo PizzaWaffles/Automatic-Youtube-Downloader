@@ -224,6 +224,9 @@ def main():
 		os.makedirs('data/')
 	if not os.path.exists('Download/'):
 		os.makedirs('Download/')
+	if not os.path.isfile('data/log.txt'):
+		open('data/log.txt', 'a').close()
+
 
 	loop = True
 	while loop:

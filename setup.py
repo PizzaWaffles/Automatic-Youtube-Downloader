@@ -123,7 +123,7 @@ def channel_selection():
 	human_count = 1
 
 	for channel in l:
-		title = channel.title
+		title = channel.title.encode('ascii', 'ignore')
 		url = channel.url
 		print("\nVideo " + str(human_count) + "/" + str(num_channels))
 		# logPrint(title)

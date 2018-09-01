@@ -177,7 +177,7 @@ def setup_config(api_key):
 				start_time = get_input("Please enter a number in hours:")
 				if start_time.isdigit():
 					print("\nSuccess! It will run at " + start_time + " everyday!")
-					f.write("START_TIME=" + start_time + 'n')
+					f.write("START_TIME=" + start_time + '\n')
 					f.write("DELAY=0\n")
 					loop = False
 				else:

@@ -262,7 +262,7 @@ def main():
 	    1. First Time Install
 	    2. Channel Selection
 	    3. Install Dependencies
-	    4.Exit/Quit
+	    4. Exit/Quit
 	    """)
 
 		menuSelection = get_input("What would you like to do? ")

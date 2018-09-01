@@ -75,7 +75,6 @@ def install_dependencies():
 	print("Complete.")
 
 
-
 def setup_youtube():
 	api_key = ""
 	setup_not_complete = True
@@ -152,8 +151,8 @@ def channel_selection():
 	human_count = 1
 
 	for channel in l:
-		title = channel.title.encode('ascii', 'ignore')
-		url = channel.url
+		title = bytes(channel.title, 'utf-8').decode('utf-8','ignore')
+		url = bytes(channel.url, 'utf-8').decode('utf-8','ignore').encode("utf-8")
 		print("\nVideo " + str(human_count) + "/" + str(num_channels))
 		# logPrint(title)
 		logPrint(url)

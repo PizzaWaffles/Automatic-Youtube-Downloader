@@ -30,6 +30,10 @@ DELAY = 0
 
 configFile = 'data/config'
 logFileName = "data/log.txt"
+if not os.path.isfile('data/log.txt'):
+	open('data/log.txt', 'a').close()
+if not os.path.exists('Download/'):
+	os.makedirs('Download/')
 
 
 def load_configs(configFile):
@@ -39,24 +43,36 @@ def load_configs(configFile):
 	global API_KEY
 	global DELAY
 
-	with open(configFile) as f:
-		for line in f:
-			line = line.rstrip() # remove newline
-			if line.find("START_HOUR") != -1:
-				data = line.split("=")
-				START_HOUR = int(data[1])
-			elif line.find("NUM_VIDEOS") != -1:
-				data = line.split("=")
-				NUM_VIDEOS = int(data[1])
-			elif line.find("DESTINATION_FOLDER") != -1:
-				data = line.split("=")
-				DESTINATION_FOLDER = str(data[1])
-			elif line.find("API_KEY") != -1:
-				data = line.split("=")
-				API_KEY = str(data[1])
-			elif line.find("DELAY") != -1:
-				data = line.split("=")
-				DELAY = int(data[1])
+	try:
+		with open(configFile) as f:
+			for line in f:
+				line = line.rstrip() # remove newline
+				if line.find("START_TIME") != -1:
+					data = line.split("=")
+					START_HOUR = int(data[1])
+				elif line.find("NUM_VIDEOS") != -1:
+					data = line.split("=")
+					NUM_VIDEOS = int(data[1])
+				elif line.find("DESTINATION_FOLDER") != -1:
+					data = line.split("=")
+					DESTINATION_FOLDER = str(data[1])
+				elif line.find("API_KEY") != -1:
+					data = line.split("=")
+					API_KEY = str(data[1])
+				elif line.find("DELAY") != -1:
+					data = line.split("=")
+					DELAY = int(data[1])
+	except Exception as e:
+		print("Cannot find config file!!")
+		print("Error dump in error.log")
+		with open('error.log', 'a+') as f:
+			f.write(str(datetime.now()) + '\n')
+			f.write(str(e))
+			f.write(traceback.format_exc())
+			f.write("\n\n----------VAR DUMP--------\n\n")
+			pprint(globals(), stream=f)
+			pprint(locals(), stream=f)
+		exit(0)
 
 
 def get_icons(channel, chid, overwrite=False):

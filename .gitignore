@@ -51,3 +51,5 @@ Temporary Items
 temp/
 data/
 Download/
+venv/
+ImageEditor

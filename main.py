@@ -177,18 +177,23 @@ def main():
 							print("Downloading - " + title + "  |  " + id)
 							print("Channel - " + str(xmltitle[i]) + "  |  " + channelID)
 
-							ydl_opts = {
-								'outtmpl': 'Download/%(uploader)s - [' + channelID + ']/%(title)s - [%(id)s].%(ext)s',  # need to put channelid in here because what youtube-dl gives may be incorrect
-								#'simulate': 'true',
-								'writethumbnail': 'true',
-								'forcetitle': 'true',
-								#'postprocessor_args': [
-								#	{'add-metadata': 'true'},
-								#],
-								'format': '248+251/best'
-							}
-							#'format:': '140+137',
-							#'prefer_ffmpeg': 'true',
+							if os.name == 'nt': # if windows use supplied ffmpeg
+								ydl_opts = {
+									'outtmpl': 'Download/%(uploader)s - [' + channelID + ']/%(title)s - [%(id)s].%(ext)s',  # need to put channelid in here because what youtube-dl gives may be incorrect
+									#'simulate': 'true',
+									'writethumbnail': 'true',
+									'forcetitle': 'true',
+									'ffmpeg_location': './ffmpeg/bin/',
+									'format': '248+251/best'
+								}
+							else:
+								# not sure here
+								ydl_opts = {
+									'outtmpl': 'Download/%(uploader)s - [' + channelID + ']/%(title)s - [%(id)s].%(ext)s',
+									'writethumbnail': 'true',
+									'forcetitle': 'true',
+									'format': '248+251/best'
+								}
 							try:
 								with youtube_dl.YoutubeDL(ydl_opts) as ydl:
 									info_dict = ydl.extract_info(url, download=False)

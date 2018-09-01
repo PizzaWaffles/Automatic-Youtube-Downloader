@@ -6,7 +6,7 @@ import string
 import glob
 import traceback
 import json
-from distutils.dir_util import copy_tree
+#from distutils.dir_util import copy_tree
 from datetime import datetime
 import time
 import sys
@@ -211,7 +211,7 @@ def main():
 										ydl.download([url])
 									else:
 										print("Warning! This video is streaming live, it will be skipped")
-										skip_download = True
+						    			skip_download = True
 
 							except Exception as e:
 								print("Failed to Download")

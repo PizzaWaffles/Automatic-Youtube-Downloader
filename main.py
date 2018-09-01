@@ -96,9 +96,10 @@ def get_icons(channel, chid, overwrite=False):
 	icon_log = open('data/icon_log.txt', 'r')
 	downloaded = icon_log.readlines()
 	icon_log.close()
+	downloaded = map(str.strip, downloaded)
 
 	if len(channel) == 0:
-		if not chid in downloaded:
+		if not (chid[0] in downloaded):
 			destinationDir = os.path.join('Download', channel[0])
 			if not os.path.exists(destinationDir):
 				os.makedirs(destinationDir)
@@ -133,7 +134,7 @@ def get_icons(channel, chid, overwrite=False):
 					pprint(locals(), stream=f)
 	else:
 		for j in range(0, len(channel)):
-			if not (chid in downloaded) or overwrite:
+			if (not chid[j] in downloaded) or overwrite:
 				destinationDir = os.path.join('Download', channel[j])
 				if not os.path.exists(destinationDir):
 					os.makedirs(destinationDir)

@@ -6,6 +6,9 @@ import pip
 import traceback
 import pkg_resources
 from pkg_resources import DistributionNotFound, VersionConflict
+from sys import platform
+import subprocess
+
 
 # support for python 3 and 2
 if sys.version_info[0] == 3:
@@ -32,19 +35,45 @@ def get_input(msg):  # support for python 2 and 3
 
 
 def install_dependencies():
-	print("Checking Dependencies....")
-	with open('requirements.txt') as f:
-		try:
-			requirements = f.readlines()
-			for r in requirements:
-				logPrint(r.rstrip())
-			pkg_resources.require(requirements)
+	try:
+		from pip import main as pipmain
+	except:
+		from pip._internal import main as pipmain
 
-		except Exception as e:
-			logPrint("ERROR:\n" + str(e))
-			logPrint(traceback.format_exc())
-			print("One or more dependencies not met!! Please run 'pip install -r requirements.txt'")
-			exit(0)
+	print("Checking Dependencies....")
+	_all_ = [
+		"beautifulsoup4",
+		"listparser",
+		"youtube-dl"
+	]
+	linux = [
+		"ffmpeg"
+	]
+	try:
+		if pipmain(['install', "--upgrade", "pip"]):
+			raise Exception
+		for package in _all_:
+			print("Checking " + package)
+			if pipmain(['install', package]):
+				raise Exception
+			#print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
+		#if platform == 'windows':
+		#	install(windows)
+		if platform.startswith('linux'):
+			for package in linux:
+				print("Checking " + package)
+				if pipmain(['install', package]):
+					raise Exception
+				#print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
+		#if platform == 'darwin':  # MacOS
+		#	install(darwin)
+	except Exception as e:
+		logPrint("ERROR:\n" + str(e))
+		logPrint(traceback.format_exc())
+		print("One or more dependencies not met!! Please run 'pip install -r requirements.txt'")
+		exit()
+	print("Complete.")
+
 
 
 def setup_youtube():
@@ -233,7 +262,8 @@ def main():
 		print("""
 	    1. First Time Install
 	    2. Channel Selection
-	    3.Exit/Quit
+	    3. Install Dependencies
+	    4.Exit/Quit
 	    """)
 
 		menuSelection = get_input("What would you like to do? ")
@@ -247,6 +277,8 @@ def main():
 		elif menuSelection == "2":
 			channel_selection()
 		elif menuSelection == "3":
+			install_dependencies()
+		elif menuSelection == "4":
 			print("\n Goodbye")
 			exit()
 		else:

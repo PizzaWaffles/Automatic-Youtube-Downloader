@@ -7,7 +7,7 @@ import glob
 import traceback
 import json
 from distutils.dir_util import copy_tree
-import datetime
+from datetime import datetime
 import time
 import sys
 from pprint import pprint
@@ -128,7 +128,7 @@ def main():
 	global DELAY
 
 	while True:
-		now = datetime.datetime.now()
+		now = datetime.now()
 
 		if now.hour == START_HOUR or START_HOUR == 0:      # Run once a day at this hour or skip check if we are using delay
 			data = lp.parse("data/youtubeData.xml")

@@ -44,7 +44,6 @@ def load_configs(configFile):
 	global NUM_VIDEOS
 	global DESTINATION_FOLDER
 	global API_KEY
-	global DELAY
 	global FORMAT
 	global FILE_FORMAT
 	global DESTINATION_FORMAT
@@ -94,8 +93,6 @@ def load_configs(configFile):
 			pprint(globals(), stream=f)
 			pprint(locals(), stream=f)
 		exit(0)
-
-
 
 
 def get_icons(channel, chid, overwrite=False):
@@ -170,12 +167,10 @@ def get_icons(channel, chid, overwrite=False):
 						pprint(locals(), stream=f)
 			print()
 
-
 def safecopy(src, dst):
 	if os.path.isdir(dst):
 		dst = os.path.join(dst, os.path.basename(src))
 	shutil.copyfile(src, dst)
-
 
 def parseFormat(formating, name="", date="", title="", chID="", id=""):
 	'''
@@ -276,11 +271,9 @@ def main():
 		for i in range(0, len(xmltitle)):  # for every channel
 			uploader = xmltitle[i]
 			print(uploader)
-
 			url_data = urlopen(xmlurl[i], )
 			url_data = url_data.read()
 			xml = bs(url_data.decode('utf-8'), 'html.parser')
-
 			videoList = xml.find_all('entry')
 			# print(xml.find_all('entry'))
 
@@ -293,7 +286,6 @@ def main():
 					title = v.title.string
 					url = v.link.get('href')
 					upload_date = v.published.string.split('T')[0]
-
 					id = v.id.string
 					channelID = str(v.find('yt:channelid').contents[0])
 					# See if we already downloaded this
@@ -363,16 +355,13 @@ def main():
 								os.makedirs(destinationDir)
 							try:
 								print("Moving Folder...")
-								# copy_tree(sourceDir, destinationDir)
 
-								# iterate through source and copy each
 								for filename in os.listdir(sourceDir):
 									safecopy(os.path.join(sourceDir, filename), destinationDir)
 
 								shutil.rmtree(sourceDir, ignore_errors=True)
 								# shutil.move(videoName, destination + destVideoName)
 								# shutil.move(thumbName, destination + destThumbName)
-
 								# everything was successful so log that we downloaded and moved the video
 								logFile = open(logFileName, 'a')
 								logFile.write(id + ' \n')

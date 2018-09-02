@@ -35,6 +35,7 @@ def get_input(msg):  # support for python 2 and 3
 
 
 def install_dependencies():
+
 	try:
 		from pip import main as pipmain
 	except:
@@ -73,6 +74,7 @@ def install_dependencies():
 		print("One or more dependencies not met!! Please run 'pip install -r requirements.txt'")
 		exit()
 	print("Complete.")
+
 
 
 def setup_youtube():

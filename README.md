@@ -4,6 +4,8 @@ This python program periodically checks youtube for new videos in a users subscr
 
 This was designed to work with Plex and this [plugin](https://github.com/ZeroQI/YouTube-Agent.bundle) and this [scanner](https://github.com/ZeroQI/Absolute-Series-Scanner)
 
+This program now works with this [plugin](https://bitbucket.org/mjarends/extendedpersonalmedia-agent.bundle/overview) and this [Scanner](https://bitbucket.org/mjarends/plex-scanners/overview) this plugin and scanner is more stable and seems to work more often. But doesn't have specific youtube data (like descriptions and tags)
+
 Please download and install both if using with Plex.
 
 ## Install

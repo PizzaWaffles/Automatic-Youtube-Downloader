@@ -263,7 +263,7 @@ def main():
 		for i in range(0, len(data.feeds)):
 			xmltitle[i] = data.feeds[i].title  # channel Title
 			xmlurl[i] = data.feeds[
-				i].url  # formated like 'https://www.youtube.com/feeds/videos.xml?channel_id=CHANNELID'
+				i].url  # formatted like 'https://www.youtube.com/feeds/videos.xml?channel_id=CHANNELID'
 			indexofid = xmlurl[i].find("id=")
 			channelIDlist[i] = xmlurl[i][indexofid + 3:]
 		get_icons(xmltitle, channelIDlist)

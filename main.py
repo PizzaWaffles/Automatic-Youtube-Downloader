@@ -22,14 +22,14 @@ else:
 	import urllib as request
 
 #GLOBAL VARS
-START_HOUR = 0
 NUM_VIDEOS = 0
 DESTINATION_FOLDER = ""
 API_KEY = ""
-DELAY = 0
 FORMAT = ""
 FILE_FORMAT = ""
 DESTINATION_FORMAT = ""
+SCHEDULING_MODE = ""
+SCHEDULING_MODE_VALUE = ""
 
 configFile = 'data/config'
 logFileName = "data/log.txt"
@@ -40,9 +40,7 @@ if not os.path.isfile('data/icon_log.txt'):
 if not os.path.exists('Download/'):
 	os.makedirs('Download/')
 
-
 def load_configs(configFile):
-	global START_HOUR
 	global NUM_VIDEOS
 	global DESTINATION_FOLDER
 	global API_KEY
@@ -50,35 +48,41 @@ def load_configs(configFile):
 	global FORMAT
 	global FILE_FORMAT
 	global DESTINATION_FORMAT
+	global SCHEDULING_MODE
+	global SCHEDULING_MODE_VALUE
 
 	try:
 		with open(configFile) as f:
 			for line in f:
-				line = line.rstrip() # remove newline
-				if line.find("START_TIME") != -1:
-					data = line.split("=")
-					START_HOUR = int(data[1])
-				elif line.find("NUM_VIDEOS") != -1:
-					data = line.split("=")
+				line = line.rstrip()  # remove newline
+				data = line.split("=")
+				print("Checking line %s as %s = %s" % (line, data[0], data[1]))
+
+				if data[0] == "SCHEDULING_MODE":
+					SCHEDULING_MODE = data[1]
+
+				elif data[0] == "SCHEDULING_MODE_VALUE":
+					if data[1].isdigit():
+						SCHEDULING_MODE_VALUE = int(data[1])
+
+				elif data[0] == "NUM_VIDEOS":
 					NUM_VIDEOS = int(data[1])
-				elif line.find("DESTINATION_FOLDER") != -1:
-					data = line.split("=")
+
+				elif data[0] == "DESTINATION_FOLDER":
 					DESTINATION_FOLDER = str(data[1])
-				elif line.find("API_KEY") != -1:
-					data = line.split("=")
+
+				elif data[0] == "API_KEY":
 					API_KEY = str(data[1])
-				elif line.find("DELAY") != -1:
-					data = line.split("=")
-					DELAY = int(data[1])
-				elif line.find("FILE_FORMAT") != -1:
-					data = line.split("=")
+
+				elif data[0] == "FILE_FORMAT":
 					FILE_FORMAT = str(data[1])
-				elif line.find("VIDEO_FORMAT") != -1:
-					data = line.split("=")
+
+				elif data[0] == "VIDEO_FORMAT":
 					FORMAT = str(data[1])
-				elif line.find("DESTINATION_FORMAT") != -1:
-					data = line.split("=")
+
+				elif data[0] == "DESTINATION_FORMAT":
 					DESTINATION_FORMAT = str(data[1])
+
 	except Exception as e:
 		print("Cannot find config file!!")
 		print("Error dump in error.log")
@@ -90,6 +94,8 @@ def load_configs(configFile):
 			pprint(globals(), stream=f)
 			pprint(locals(), stream=f)
 		exit(0)
+
+
 
 
 def get_icons(channel, chid, overwrite=False):
@@ -199,11 +205,136 @@ def parseFormat(formating, name="", date="", title="", chID="", id=""):
 	return result
 
 
+
 def main():
-	global START_HOUR
 	global NUM_VIDEOS
 	global DESTINATION_FOLDER
 	global API_KEY
+	global FORMAT
+	global FILE_FORMAT
+	global SCHEDULING_MODE
+	global SCHEDULING_MODE_VALUE
+
+	number_of_runs_completed = 0
+	did_i_just_complete_run = False
+	minutes_to_wait = 0
+
+	while True:
+		print("Starting on run number %s" % number_of_runs_completed)
+		if SCHEDULING_MODE == "TIME_OF_DAY":
+			print("Evaluating time of day run for %s schedule mode" % SCHEDULING_MODE_VALUE)
+			if did_i_just_complete_run:
+				minutes_to_wait = 24 * 60
+				print("  Just completed run, need to wait %s minutes" % minutes_to_wait)
+				did_i_just_complete_run = False
+			else:
+				minutes_to_wait = (SCHEDULING_MODE_VALUE - datetime.now().hour) * 60
+				if minutes_to_wait < 0:
+					minutes_to_wait += 24 * 60
+
+				minutes_to_wait -= datetime.now().minute
+				print("  First scheduled run set for %s minutes from now" % minutes_to_wait)
+
+		elif SCHEDULING_MODE == "RUN_ONCE":
+			print("Evaluating run once schedule mode")
+			if did_i_just_complete_run:
+				print("  Just completed run, ending")
+				break
+			else:
+				print("  Starting run once")
+
+		elif SCHEDULING_MODE == "DELAY":
+			print("Evaluating delay schedule mode")
+			if did_i_just_complete_run:
+				minutes_to_wait = SCHEDULING_MODE_VALUE
+				print("  Next run in %s minutes" % minutes_to_wait)
+			else:
+				print("  First run, doing it now")
+
+		else:
+			print("Unknown SCHEDULING_MODE found %s" % SCHEDULING_MODE)
+			#todo this should throw an exception
+			break
+
+		print("Sleeping for %s minutes..." % minutes_to_wait)
+		time.sleep(minutes_to_wait * 60)
+
+		data = lp.parse("data/youtubeData.xml")
+
+		# init for usage outside of this for loop
+		xmltitle = [None] * len(data.feeds)
+		xmlurl = [None] * len(data.feeds)
+		channelIDlist = [None] * len(data.feeds)
+		valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+
+		for i in range(0, len(data.feeds)):
+			xmltitle[i] = data.feeds[i].title  # channel Title
+			xmlurl[i] = data.feeds[i].url  # formated like 'https://www.youtube.com/feeds/videos.xml?channel_id=CHANNELID'
+			indexofid = xmlurl[i].find("id=")
+			channelIDlist[i] = xmlurl[i][indexofid + 3:]
+		get_icons(xmltitle, channelIDlist)
+
+		for i in range(0, len(xmltitle)):  # for every channel
+			uploader = xmltitle[i]
+			print(uploader)
+
+			url_data = urlopen(xmlurl[i], )
+			url_data = url_data.read()
+			xml = bs(url_data.decode('utf-8'), 'html.parser')
+
+			videoList = xml.find_all('entry')
+			# print(xml.find_all('entry'))
+
+			video_download_count = 0
+			for v in videoList:  # for every video in channel
+				# make sure we only download how many we want
+				if video_download_count < NUM_VIDEOS:
+					skip_download = False
+					video_download_count += 1
+					title = v.title.string
+					url = v.link.get('href')
+					upload_date = v.published.string.split('T')[0]
+
+					id = v.id.string
+					channelID = str(v.find('yt:channelid').contents[0])
+					# See if we already downloaded this
+					logFile = open(logFileName, 'r')
+					logFileContents = logFile.read()
+					logFile.close()
+					if id in logFileContents:
+						print("Video Already downloaded")
+					else:
+						filename_format = parseFormat(FILE_FORMAT, uploader, upload_date, title, channelID, id)
+
+						print("Downloading - " + title + "  |  " + id)
+						print("Channel - " + str(xmltitle[i]) + "  |  " + channelID)
+
+						if os.name == 'nt':  # if windows use supplied ffmpeg
+							ydl_opts = {
+								'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',
+							# need to put channelid in here because what youtube-dl gives may be incorrect
+								# 'simulate': 'true',
+								'writethumbnail': 'true',
+								'forcetitle': 'true',
+								'ffmpeg_location': './ffmpeg/bin/',
+								'format': FORMAT
+							}
+						else:
+							# not sure here
+							ydl_opts = {
+								'outtmpl': 'Download/' + filename_format + '.%(ext)s',
+								'writethumbnail': 'true',
+								'forcetitle': 'true',
+								'format': FORMAT
+							}
+
+
+def main():
+#    global START_HOUR
+	global NUM_VIDEOS
+	global DESTINATION_FOLDER
+	global API_KEY
+<<<<<<< HEAD
 	global DELAY
 	global FORMAT
 	global FILE_FORMAT
@@ -279,24 +410,188 @@ def main():
 									'forcetitle': 'true',
 									'format': FORMAT
 								}
-							try:
-								with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-									info_dict = ydl.extract_info(url, download=False)
-									video_id = info_dict.get("id", None)
-									video_title = info_dict.get("title", None)
-									video_date = info_dict.get("upload_date", None)
-									uploader = info_dict.get("uploader", None)
-									is_live = info_dict.get("is_live", None)
-									if not is_live:
-										ydl.download([url])
-									else:
-										print("Warning! This video is streaming live, it will be skipped")
-										skip_download = True
+=======
+#    global DELAY
+	global SCHEDULING_MODE
+	global SCHEDULING_MODE_VALUE
 
+	number_of_runs_completed = 0
+	did_i_just_complete_run = False
+	minutes_to_wait = 0
+
+	while True:
+		print("Starting on run number %s" % number_of_runs_completed)
+		if SCHEDULING_MODE == "TIME_OF_DAY":
+			print("Evaluating time of day run for %s schedule mode" % SCHEDULING_MODE_VALUE)
+			if did_i_just_complete_run:
+				minutes_to_wait = 24 * 60
+				print("  Just completed run, need to wait %s minutes" % minutes_to_wait)
+				did_i_just_complete_run = False
+			else:
+				minutes_to_wait = (SCHEDULING_MODE_VALUE - datetime.now().hour) * 60
+				if minutes_to_wait < 0:
+					minutes_to_wait += 24 * 60
+
+				minutes_to_wait -= datetime.now().minute
+				print("  First scheduled run set for %s minutes from now" % minutes_to_wait)
+
+		elif SCHEDULING_MODE == "RUN_ONCE":
+			print("Evaluating run once schedule mode")
+			if did_i_just_complete_run:
+				print("  Just completed run, ending")
+				break
+			else:
+				print("  Starting run once")
+
+		elif SCHEDULING_MODE == "DELAY":
+			print("Evaluating delay schedule mode")
+			if did_i_just_complete_run:
+				minutes_to_wait = SCHEDULING_MODE_VALUE
+				print("  Next run in %s minutes" % minutes_to_wait)
+			else:
+				print("  First run, doing it now")
+
+		else:
+			print("Unknown SCHEDULING_MODE found %s" % SCHEDULING_MODE)
+			#todo this should throw an exception
+			break
+
+		print("Sleeping for %s minutes..." % minutes_to_wait)
+		time.sleep(minutes_to_wait * 60)
+
+		# not needed now = datetime.now()
+
+		data = lp.parse("data/youtubeData.xml")
+
+		# init for usage outside of this for loop
+		xmltitle = [None] * len(data.feeds)
+		xmlurl = [None] * len(data.feeds)
+		channelIDlist = [None] * len(data.feeds)
+		valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+
+		for i in range(0, len(data.feeds)):
+			xmltitle[i] = data.feeds[i].title       #channel Title
+			xmlurl[i] = data.feeds[i].url   # formated like 'https://www.youtube.com/feeds/videos.xml?channel_id=CHANNELID'
+			indexofid = xmlurl[i].find("id=")
+			channelIDlist[i] = xmlurl[i][indexofid+3:]
+		get_icons(xmltitle, channelIDlist)
+
+		for i in range(0, len(xmltitle)):  # for every channel
+			print(xmltitle[i])
+
+			url_data = urlopen(xmlurl[i], )
+			url_data = url_data.read()
+			xml = bs(url_data.decode('utf-8'), 'html.parser')
+
+			videoList = xml.find_all('entry')
+			#print(xml.find_all('entry'))
+
+			video_download_count = 0
+			for v in videoList:     # for every video in channel
+				#make sure we only download how many we want
+				if video_download_count < NUM_VIDEOS:
+					skip_download = False
+					video_download_count += 1
+					title = v.title.string
+					url = v.link.get('href')
+
+					id = v.id.string
+					channelID = str(v.find('yt:channelid').contents[0])
+					# See if we already downloaded this
+					logFile = open(logFileName, 'r')
+					logFileContents = logFile.read()
+					logFile.close()
+					if id in logFileContents:
+						print("Video Already downloaded")
+					else:
+						print("Downloading - " + title + "  |  " + id)
+						print("Channel - " + str(xmltitle[i]) + "  |  " + channelID)
+
+						if os.name == 'nt': # if windows use supplied ffmpeg
+							ydl_opts = {
+								'outtmpl': 'Download/%(uploader)s - [' + channelID + ']/%(title)s - [%(id)s].%(ext)s',  # need to put channelid in here because what youtube-dl gives may be incorrect
+								#'simulate': 'true',
+								'writethumbnail': 'true',
+								'forcetitle': 'true',
+								'ffmpeg_location': './ffmpeg/bin/',
+								'format': '248+251/best'
+							}
+						else:
+							# not sure here
+							ydl_opts = {
+								'outtmpl': 'Download/%(uploader)s - [' + channelID + ']/%(title)s - [%(id)s].%(ext)s',
+								'writethumbnail': 'true',
+								'forcetitle': 'true',
+								'format': '248+251/best'
+							}
+						try:
+							with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+								info_dict = ydl.extract_info(url, download=False)
+								video_id = info_dict.get("id", None)
+								video_title = info_dict.get("title", None)
+								video_date = info_dict.get("upload_date", None)
+								uploader = info_dict.get("uploader", None)
+								is_live = info_dict.get("is_live", None)
+								if not is_live:
+									ydl.download([url])
+								else:
+									print("Warning! This video is streaming live, it will be skipped")
+									skip_download = True
+
+						except Exception as e:
+							print("Failed to Download")
+							print("Error dump in error.log")
+							skip_download = True
+							with open('error.log', 'a+') as f:
+								f.write(str(datetime.now()) + '\n')
+								f.write(str(e))
+								f.write(traceback.format_exc())
+								f.write("\n\n----------VAR DUMP--------\n\n")
+								pprint(globals(), stream=f)
+								pprint(locals(), stream=f)
+						#if video_title is not None:  # should be the same but just in case
+						#	title = video_title
+						#title = ''.join(c for c in title if c in valid_chars)       # make sure all the chars are valid for windows
+
+						#if glob.glob('*' + video_id + '.mp4'):
+						#	extension = ".mp4"
+						#else:
+						#	extension = ".webm"
+						#title = glob.glob('*' + video_id + '*')[0]
+						#title = title[0:len(title)-5]
+						#title = title[0:len(title)-len(video_id)-1]
+
+
+						#destVideoName = title + " - [" + video_id +"]" + extension
+						#destThumbName = title + " - [" + video_id +"].jpg"
+
+						if not skip_download:
+							sourceDir = 'Download/' + uploader + ' - [' + channelID + ']/'
+							destinationDir = DESTINATION_FOLDER + uploader + ' [Youtube-' + channelID + ']/'
+
+							if not os.path.exists(destinationDir):
+								print("Creating Source Directory")
+								os.makedirs(destinationDir)
+>>>>>>> Scheduling code redux.  Changes to config file, setup, and then the top of the loop in main.
+							try:
+								print("Moving Folder...")
+								#copy_tree(sourceDir, destinationDir)
+
+								#iterate through source and copy each
+								for filename in os.listdir(sourceDir):
+									safecopy(os.path.join(sourceDir, filename), destinationDir)
+
+								shutil.rmtree(sourceDir, ignore_errors=True)
+								#shutil.move(videoName, destination + destVideoName)
+								#shutil.move(thumbName, destination + destThumbName)
+
+								#everything was successful so log that we downloaded and moved the video
+								logFile = open(logFileName, 'a')
+								logFile.write(id + ' \n')
+								logFile.close()
 							except Exception as e:
-								print("Failed to Download")
+								print("An error occured moving file")
 								print("Error dump in error.log")
-								skip_download = True
 								with open('error.log', 'a+') as f:
 									f.write(str(datetime.now()) + '\n')
 									f.write(str(e))
@@ -304,6 +599,7 @@ def main():
 									f.write("\n\n----------VAR DUMP--------\n\n")
 									pprint(globals(), stream=f)
 									pprint(locals(), stream=f)
+<<<<<<< HEAD
 
 							if not skip_download:
 								sourceDir = 'Download/' + uploader + '/'
@@ -341,14 +637,9 @@ def main():
 										pprint(locals(), stream=f)
 								print()
 				print()
-		else:
-			print("Going to sleep")
-			if DELAY == 0:
-				time.sleep(60*60*60) # Sleep for an hour
-			else:
-				time.sleep(DELAY * 60)
 
-
+		number_of_runs_completed += 1
+		did_i_just_complete_run = True
 
 if __name__ == "__main__":
 	load_configs(configFile)

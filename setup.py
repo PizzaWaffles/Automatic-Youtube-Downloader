@@ -18,7 +18,7 @@ else:
     from urllib import urlopen
     import urllib as request
 
-DEBUGLOGGING = True
+DEBUGLOGGING = False
 configFile = "data/config"
 
 def logPrint(string):
@@ -118,6 +118,7 @@ def setup_youtube():
 
 
 def channel_selection():
+<<<<<<< HEAD
 	import listparser as lp
 	# This function parses OPML data and allows the user to select which channels to be included
 	print("\n\n\nParsing Youtube data.....")
@@ -179,6 +180,71 @@ def channel_selection():
 	file.write('</body>\n</opml>')
 	file.close()
 	print("\nComplete.")
+=======
+    import listparser as lp
+    # This function parses OPML data and allows the user to select which channels to be included
+    print("\n\n\nParsing Youtube data.....")
+    all_channels = False
+    loop = True
+    while loop:
+        selection = get_input(
+            "Would you like to select which channels you want to include, or do you want to include all of them?\n"
+            "If you include all channels you can remove them manually by editing data/youtubeData.xml and deleting the"
+            " entire line of the channel you do not want (Choose this option if you have a lot of subscriptions)\n"
+            "Enter 'all' to keep all subscriptions or 'select' to select which channels (or 'a' or 's'):").lower()
+        if selection == 'all' or selection == 'a':
+            all_channels = True
+            loop = False
+            print("Including all channels")
+        elif selection == 'select' or selection == 's':
+            all_channels = False
+            loop = False
+            print(
+                "You will now be asked to select which channels you would like to include in your download library. \nAny"
+                " channels you do not include will be ignored. \nWarning: if you add a new subscription you must go through this"
+                " process again (until I add a feature to import a channel)\n")
+        else:
+            print("Invalid Selection!!! Try again.")
+
+    file = open("data/youtubeData.xml", 'w')
+    d = lp.parse('data/subscription_manager.xml')
+    l = d.feeds
+    file.write('<opml version="1.1">\n<body>\n')
+    num_channels = len(l)
+    human_count = 1
+
+    for channel in l:
+        title = channel.title.encode('ascii', 'ignore')
+        url = channel.url
+        print("\nVideo " + str(human_count) + "/" + str(num_channels))
+        # logPrint(title)
+        logPrint(url)
+
+        print(title)
+        if not all_channels:
+            loop = True
+            while loop:
+                selection = get_input(
+                    "Select if you want to include the channel above, select 'yes' or 'no' (or 'y' or 'n'):").lower()
+                if selection == 'y' or selection == 'yes':
+                    print(title)
+                    print(url)
+                    file.write('<outline title="' + title + '" xmlUrl="' + url + '"/>\n')
+                    print(title + " will be included!!")
+                    loop = False
+                elif selection == 'n' or selection == 'no':
+                    loop = False
+                    print(title + " will NOT be included!!")
+                else:
+                    print("Invalid response. Tray again.")
+        else:
+            file.write('<outline title="' + str(title) + '" xmlUrl="' + url + '"/>\n')
+        human_count += 1
+
+    file.write('</body>\n</opml>')
+    file.close()
+    print("\nComplete.")
+>>>>>>> Turning off debugging flag
 
 
 def setup_config(api_key):

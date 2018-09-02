@@ -271,7 +271,7 @@ def main():
 		for i in range(0, len(xmltitle)):  # for every channel
 			uploader = xmltitle[i]
 			print(uploader)
-			url_data = urlopen(xmlurl[i], )
+			url_data = urlopen(xmlurl[i],)
 			url_data = url_data.read()
 			xml = bs(url_data.decode('utf-8'), 'html.parser')
 			videoList = xml.find_all('entry')

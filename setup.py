@@ -36,44 +36,44 @@ def get_input(msg):  # support for python 2 and 3
 
 def install_dependencies():
 
-	try:
-		from pip import main as pipmain
-	except:
-		from pip._internal import main as pipmain
+    try:
+        from pip import main as pipmain
+    except:
+        from pip._internal import main as pipmain
 
-	print("Checking Dependencies....")
-	_all_ = [
-		"beautifulsoup4",
-		"listparser",
-		"youtube-dl"
-	]
-	linux = [
-		"ffmpeg"
-	]
-	try:
-		if pipmain(['install', "--upgrade", "pip"]):
-			raise Exception
-		for package in _all_:
-			print("Checking " + package)
-			if pipmain(['install', package]):
-				raise Exception
-			#print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
-		#if platform == 'windows':
-		#	install(windows)
-		if platform.startswith('linux'):
-			for package in linux:
-				print("Checking " + package)
-				if pipmain(['install', package]):
-					raise Exception
-				#print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
-		#if platform == 'darwin':  # MacOS
-		#	install(darwin)
-	except Exception as e:
-		logPrint("ERROR:\n" + str(e))
-		logPrint(traceback.format_exc())
-		print("One or more dependencies not met!! Please run 'pip install -r requirements.txt'")
-		exit()
-	print("Complete.")
+    print("Checking Dependencies....")
+    _all_ = [
+        "beautifulsoup4",
+        "listparser",
+        "youtube-dl"
+    ]
+    linux = [
+        "ffmpeg"
+    ]
+    try:
+        if pipmain(['install', "--upgrade", "pip"]):
+            raise Exception
+        for package in _all_:
+            print("Checking " + package)
+            if pipmain(['install', package]):
+                raise Exception
+            #print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
+        #if platform == 'windows':
+        #	install(windows)
+        if platform.startswith('linux'):
+            for package in linux:
+                print("Checking " + package)
+                if pipmain(['install', package]):
+                    raise Exception
+                #print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
+        #if platform == 'darwin':  # MacOS
+        #	install(darwin)
+    except Exception as e:
+        logPrint("ERROR:\n" + str(e))
+        logPrint(traceback.format_exc())
+        print("One or more dependencies not met!! Please run 'pip install -r requirements.txt'")
+        exit()
+    print("Complete.")
 
 
 
@@ -120,67 +120,68 @@ def setup_youtube():
 
 
 def channel_selection():
-	import listparser as lp
-	# This function parses OPML data and allows the user to select which channels to be included
-	print("\n\n\nParsing Youtube data.....")
-	all_channels = False
-	loop = True
-	while loop:
-		selection = get_input(
-			"Would you like to select which channels you want to include, or do you want to include all of them?\n"
-			"If you include all channels you can remove them manually by editing data/youtubeData.xml and deleting the"
-			" entire line of the channel you do not want (Choose this option if you have a lot of subscriptions)\n"
-			"Enter 'all' to keep all subscriptions or 'select' to select which channels (or 'a' or 's'):").lower()
-		if selection == 'all' or selection == 'a':
-			all_channels = True
-			loop = False
-			print("Including all channels")
-		elif selection == 'select' or selection == 's':
-			all_channels = False
-			loop = False
-			print(
-				"You will now be asked to select which channels you would like to include in your download library. \nAny"
-				" channels you do not include will be ignored. \nWarning: if you add a new subscription you must go through this"
-				" process again (until I add a feature to import a channel)\n")
-		else:
-			print("Invalid Selection!!! Try again.")
+    import listparser as lp
+    # This function parses OPML data and allows the user to select which channels to be included
+    print("\n\n\nParsing Youtube data.....")
+    all_channels = False
+    loop = True
+    while loop:
+        selection = get_input(
+            "Would you like to select which channels you want to include, or do you want to include all of them?\n"
+            "If you include all channels you can remove them manually by editing data/youtubeData.xml and deleting the"
+            " entire line of the channel you do not want (Choose this option if you have a lot of subscriptions)\n"
+            "Enter 'all' to keep all subscriptions or 'select' to select which channels (or 'a' or 's'):").lower()
+        if selection == 'all' or selection == 'a':
+            all_channels = True
+            loop = False
+            print("Including all channels")
+        elif selection == 'select' or selection == 's':
+            all_channels = False
+            loop = False
+            print(
+                "You will now be asked to select which channels you would like to include in your download library. \nAny"
+                " channels you do not include will be ignored. \nWarning: if you add a new subscription you must go through this"
+                " process again (until I add a feature to import a channel)\n")
+        else:
+            print("Invalid Selection!!! Try again.")
 
-	file = open("data/youtubeData.xml", 'w')
-	d = lp.parse('data/subscription_manager.xml')
-	l = d.feeds
-	file.write('<opml version="1.1">\n<body>\n')
-	num_channels = len(l)
-	human_count = 1
+    file = open("data/youtubeData.xml", 'w')
+    d = lp.parse('data/subscription_manager.xml')
+    l = d.feeds
+    file.write('<opml version="1.1">\n<body>\n')
+    num_channels = len(l)
+    human_count = 1
 
-	for channel in l:
-		title = bytes(channel.title, 'utf-8').decode('utf-8','ignore')
-		url = bytes(channel.url, 'utf-8').decode('utf-8','ignore').encode("utf-8")
-		print("\nVideo " + str(human_count) + "/" + str(num_channels))
-		# logPrint(title)
-		logPrint(url)
+    for channel in l:
+        title = bytes(channel.title, 'utf-8').decode('utf-8','ignore')
+        #url = bytes(channel.url, 'utf-8').decode('utf-8','ignore').encode("utf-8")
+        url = channel.url
+        print("\nVideo " + str(human_count) + "/" + str(num_channels))
+        # logPrint(title)
+        logPrint(url)
 
-		print(title)
-		if not all_channels:
-			loop = True
-			while loop:
-				selection = get_input(
-					"Select if you want to include the channel above, select 'yes' or 'no' (or 'y' or 'n'):").lower()
-				if selection == 'y' or selection == 'yes':
-					file.write('<outline title="' + title + '" xmlUrl="' + url + '"/>\n')
-					print(title + " will be included!!")
-					loop = False
-				elif selection == 'n' or selection == 'no':
-					loop = False
-					print(title + " will NOT be included!!")
-				else:
-					print("Invalid response. Tray again.")
-		else:
-			file.write('<outline title="' + title + '" xmlUrl="' + url + '"/>\n')
-		human_count += 1
+        print(title)
+        if not all_channels:
+            loop = True
+            while loop:
+                selection = get_input(
+                    "Select if you want to include the channel above, select 'yes' or 'no' (or 'y' or 'n'):").lower()
+                if selection == 'y' or selection == 'yes':
+                    file.write('<outline title="' + title + '" xmlUrl="' + url + '"/>\n')
+                    print(title + " will be included!!")
+                    loop = False
+                elif selection == 'n' or selection == 'no':
+                    loop = False
+                    print(title + " will NOT be included!!")
+                else:
+                    print("Invalid response. Tray again.")
+        else:
+            file.write('<outline title="' + str(title) + '" xmlUrl="' + str(url) + '"/>\n')
+        human_count += 1
 
-	file.write('</body>\n</opml>')
-	file.close()
-	print("\nComplete.")
+    file.write('</body>\n</opml>')
+    file.close()
+    print("\nComplete.")
 
 def setup_config(api_key):
     print("\n\n\nSetting up Config file")
@@ -260,40 +261,40 @@ def setup_config(api_key):
 
 
 def main():
-	if not os.path.exists('data/'):
-		os.makedirs('data/')
-	if not os.path.exists('Download/'):
-		os.makedirs('Download/')
-	if not os.path.isfile('data/log.txt'):
-		open('data/log.txt', 'a').close()
+    if not os.path.exists('data/'):
+        os.makedirs('data/')
+    if not os.path.exists('Download/'):
+        os.makedirs('Download/')
+    if not os.path.isfile('data/log.txt'):
+        open('data/log.txt', 'a').close()
 
 
-	loop = True
-	while loop:
-		print("""
-	    1. First Time Install
-	    2. Channel Selection
-	    3. Install Dependencies
-	    4. Exit/Quit
-	    """)
+    loop = True
+    while loop:
+        print("""
+        1. First Time Install
+        2. Channel Selection
+        3. Install Dependencies
+        4. Exit/Quit
+        """)
 
-		menuSelection = get_input("What would you like to do? ")
+        menuSelection = get_input("What would you like to do? ")
 
-		if menuSelection == "1":
-			install_dependencies()
-			api_key = setup_youtube()
-			channel_selection()
-			setup_config(api_key, )
-			print('\n\n\n----------This completes the setup you may now exit-----------\n')
-		elif menuSelection == "2":
-			channel_selection()
-		elif menuSelection == "3":
-			install_dependencies()
-		elif menuSelection == "4":
-			print("\n Goodbye")
-			exit()
-		else:
-			print("\n Not Valid Choice Try again")
+        if menuSelection == "1":
+            install_dependencies()
+            api_key = setup_youtube()
+            channel_selection()
+            setup_config(api_key, )
+            print('\n\n\n----------This completes the setup you may now exit-----------\n')
+        elif menuSelection == "2":
+            channel_selection()
+        elif menuSelection == "3":
+            install_dependencies()
+        elif menuSelection == "4":
+            print("\n Goodbye")
+            exit()
+        else:
+            print("\n Not Valid Choice Try again")
 
 
 if __name__ == "__main__":

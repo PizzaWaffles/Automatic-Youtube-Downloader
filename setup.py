@@ -15,7 +15,7 @@ else:
     from urllib import urlopen
     import urllib as request
 
-DEBUGLOGGING = True
+DEBUGLOGGING = False
 configFile = "data/config"
 
 def logPrint(string):
@@ -147,7 +147,7 @@ def channel_selection():
                 else:
                     print("Invalid response. Tray again.")
         else:
-            file.write('<outline title="' + title + '" xmlUrl="' + url + '"/>\n')
+            file.write('<outline title="' + str(title) + '" xmlUrl="' + url + '"/>\n')
         human_count += 1
 
     file.write('</body>\n</opml>')

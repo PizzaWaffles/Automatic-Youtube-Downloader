@@ -8,7 +8,7 @@ import pkg_resources
 from pkg_resources import DistributionNotFound, VersionConflict
 from sys import platform
 import subprocess
-
+import xml.sax.saxutils
 
 # support for python 3 and 2
 if sys.version_info[0] == 3:
@@ -134,7 +134,7 @@ def channel_selection():
         if selection == 'all' or selection == 'a':
             all_channels = True
             loop = False
-            print("Including all channels")
+            print("Including all channels\n")
         elif selection == 'select' or selection == 's':
             all_channels = False
             loop = False
@@ -153,35 +153,42 @@ def channel_selection():
     human_count = 1
 
     for channel in l:
-        title = bytes(channel.title, 'utf-8').decode('utf-8','ignore')
-        #url = bytes(channel.url, 'utf-8').decode('utf-8','ignore').encode("utf-8")
-        url = channel.url
-        print("\nVideo " + str(human_count) + "/" + str(num_channels))
-        # logPrint(title)
+        include_this_subscription = True
+        title = bytes(channel.title, 'utf-8').decode('utf-8', 'ignore')
+        url = bytes(channel.url, 'utf-8').decode('utf-8', 'ignore')
+
         logPrint(url)
 
-        print(title)
+        if all_channels:
+            print("(%i/%i) Including subscription: %s\n" % (human_count, num_channels, title))
+
         if not all_channels:
             loop = True
             while loop:
                 selection = get_input(
-                    "Select if you want to include the channel above, select 'yes' or 'no' (or 'y' or 'n'):").lower()
+                    "(%i/%i) Include %s, yes or no (y/n)?" % (human_count, num_channels, title)).lower()
                 if selection == 'y' or selection == 'yes':
-                    file.write('<outline title="' + title + '" xmlUrl="' + url + '"/>\n')
-                    print(title + " will be included!!")
+                    include_this_subscription = True
+                    print("   Including %s\n" % title)
                     loop = False
                 elif selection == 'n' or selection == 'no':
+                    include_this_subscription = False
                     loop = False
-                    print(title + " will NOT be included!!")
                 else:
-                    print("Invalid response. Tray again.")
-        else:
-            file.write('<outline title="' + str(title) + '" xmlUrl="' + str(url) + '"/>\n')
+                    print("   Invalid response. Try again.")
+
         human_count += 1
+
+        if include_this_subscription:
+            file.write('<outline title="' + xml.sax.saxutils.escape(title) + '" xmlUrl="' + xml.sax.saxutils.escape(
+                url) + '"/>\n')
+        else:
+            print("   Not including %s\n" % title)
 
     file.write('</body>\n</opml>')
     file.close()
     print("\nComplete.")
+
 
 def setup_config(api_key):
     print("\n\n\nSetting up Config file")

@@ -313,7 +313,7 @@ def main():
 						else:
 							# not sure here
 							ydl_opts = {
-								'outtmpl': 'Download/' + filename_format + '.%(ext)s',
+								'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',
 								'writethumbnail': 'true',
 								'forcetitle': 'true',
 								'format': FORMAT
@@ -345,21 +345,27 @@ def main():
 								pprint(locals(), stream=f)
 
 						if not skip_download:
-							sourceDir = 'Download/' + uploader + '/'
-							destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID,
-														 id)
-							destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
+							subscription_source_dir = 'Download/' + uploader + '/'
+							subscription_destination_dir = os.path.join(DESTINATION_FOLDER, uploader)
 
-							if not os.path.exists(destinationDir):
-								print("Creating Source Directory")
-								os.makedirs(destinationDir)
+							#destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
+							#destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
+
+							if not os.path.exists(DESTINATION_FOLDER + uploader):
+								print("Creating uploader destination directory for %s" % subscription_destination_dir)
+								os.makedirs(subscription_destination_dir)
 							try:
-								print("Moving Folder...")
+								print("Now moving content from %s to %s" % (subscription_source_dir, subscription_destination_dir))
 
-								for filename in os.listdir(sourceDir):
-									safecopy(os.path.join(sourceDir, filename), destinationDir)
+								for filename in os.listdir(subscription_source_dir):
+									print("   Checking file %s" % filename)
+									source_to_get = os.path.join(subscription_source_dir, filename)
+									where_to_place = subscription_destination_dir
+									print("  Moving file %s to %s" % (source_to_get, where_to_place))
+									safecopy(source_to_get, where_to_place)
+									#shutil.move(os.path.join(subscription_source_dir, filename), subscription_destination_dir)
 
-								shutil.rmtree(sourceDir, ignore_errors=True)
+								shutil.rmtree(subscription_source_dir, ignore_errors=True)
 								# shutil.move(videoName, destination + destVideoName)
 								# shutil.move(thumbName, destination + destThumbName)
 								# everything was successful so log that we downloaded and moved the video
@@ -377,10 +383,12 @@ def main():
 									pprint(globals(), stream=f)
 									pprint(locals(), stream=f)
 							print()
+
 			print()
 
 		number_of_runs_completed += 1
 		did_i_just_complete_run = True
+
 
 if __name__ == "__main__":
 	load_configs(configFile)

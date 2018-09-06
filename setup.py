@@ -282,7 +282,6 @@ def setup_config(api_key):
             try:
                 if not os.path.isdir(response): # either not a valid directory or not created
                     # try making a directory and see if it throws an exception
-
                     print("Creating Source Directory")
                     response = os.path.join(response, '')      # add a trailing backslash if not already there
                     os.makedirs(response)
@@ -303,8 +302,6 @@ def setup_config(api_key):
 
 
 def main():
-    logging.basicConfig(filename='setup.log', level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-    logging.info("Program setup.py started")
 
     if not os.path.exists('data/'):
         logging.info("Data directory not found, creating...")
@@ -342,8 +339,7 @@ def main():
         elif menuSelection == "4":
             print("\n Goodbye")
             logging.info("User exited program")
-            logging.info("Program setup.py ended")
-            logging.info("====================================================================")
+
             exit()
         else:
             print("\n Not Valid Choice Try again")
@@ -351,7 +347,12 @@ def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(filename='setup.log', level=logging.DEBUG, format='%(asctime)s %(message)s',
+                        datefmt='%m/%d/%Y %I:%M:%S %p')
+
+    logging.info("Program setup.py started")
     main()
-    # print(setup_youtube())
-    #channel_selection()
-    #setup_config("123")
+    logging.info("Program setup.py ended")
+    logging.info("====================================================================")
+
+

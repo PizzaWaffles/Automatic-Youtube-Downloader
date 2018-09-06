@@ -22,6 +22,7 @@ else:
 DEBUGLOGGING = False
 configFile = "data/config"
 
+
 # this should be deprecated in favor of logging.* calls
 def logPrint(string):
     if DEBUGLOGGING:
@@ -38,7 +39,6 @@ def get_input(msg):  # support for python 2 and 3
 
 
 def install_dependencies():
-
     try:
         from pip import main as pipmain
     except:
@@ -60,17 +60,17 @@ def install_dependencies():
             logging.debug("Looking for package %s" % package)
             if pipmain(['install', package]):
                 raise Exception
-            #print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
-        #if platform == 'windows':
+                # print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
+        # if platform == 'windows':
         #	install(windows)
         if platform.startswith('linux'):
             for package in linux:
                 logging.debug("Looking for linux package %s" % package)
                 if pipmain(['install', package]):
                     raise Exception
-                #print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
-        #if platform == 'darwin':  # MacOS
-        #	install(darwin)
+                    # print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
+                    # if platform == 'darwin':  # MacOS
+                    #	install(darwin)
     except Exception as e:
         logging.error("Exception occurred %s" % str(e))
         logPrint("ERROR:\n" + str(e))
@@ -78,7 +78,6 @@ def install_dependencies():
         print("One or more dependencies not met!! Please run 'pip install -r requirements.txt'")
         exit()
     print("Complete.")
-
 
 
 def setup_youtube():
@@ -171,7 +170,8 @@ def channel_selection():
     logging.debug("Processing channels")
     for channel in l:
         include_this_subscription = True
-        title = bytes(channel.title, 'utf-8').decode('utf-8', 'ignore')
+        title = channel.title.replace('&', 'and')
+        title = channel.title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
         url = bytes(channel.url, 'utf-8').decode('utf-8', 'ignore')
 
         logging.debug("Processing channel: %s" % title)
@@ -263,7 +263,7 @@ def setup_config(api_key):
                 logging.warning("User entered bad selection for how to run %s" % selection)
 
         loop = True
-        while(loop):
+        while (loop):
             response = get_input("\nHow many videos for each channel do you want to download? (max 15)")
             if response.isdigit():
                 logging.info("User selected %s videos to be downloaded per channel" % response)
@@ -280,13 +280,13 @@ def setup_config(api_key):
             logging.info("User selected path to place videos as %s" % response)
 
             try:
-                if not os.path.isdir(response): # either not a valid directory or not created
+                if not os.path.isdir(response):  # either not a valid directory or not created
                     # try making a directory and see if it throws an exception
                     print("Creating Source Directory")
-                    response = os.path.join(response, '')      # add a trailing backslash if not already there
+                    response = os.path.join(response, '')  # add a trailing backslash if not already there
                     os.makedirs(response)
                     logging.info("Path to video library was not found, created")
-                    f.write("DESTINATION_FOLDER=" + response + '\n')   # if it gets this far we are good
+                    f.write("DESTINATION_FOLDER=" + response + '\n')  # if it gets this far we are good
                     print('\nSuccess!')
                     loop = False
                 else:
@@ -302,7 +302,6 @@ def setup_config(api_key):
 
 
 def main():
-
     if not os.path.exists('data/'):
         logging.info("Data directory not found, creating...")
         os.makedirs('data/')
@@ -312,7 +311,6 @@ def main():
     if not os.path.isfile('data/log.txt'):
         logging.info("log.txt not found, creating...")
         open('data/log.txt', 'a').close()
-
 
     loop = True
     while loop:
@@ -348,11 +346,9 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(filename='setup.log', level=logging.DEBUG, format='%(asctime)s %(message)s',
-                        datefmt='%m/%d/%Y %I:%M:%S %p')
+        datefmt='%m/%d/%Y %I:%M:%S %p')
 
     logging.info("Program setup.py started")
     main()
     logging.info("Program setup.py ended")
     logging.info("====================================================================")
-
-

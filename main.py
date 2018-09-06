@@ -25,7 +25,7 @@ else:
 NUM_VIDEOS = 0
 DESTINATION_FOLDER = ""
 API_KEY = ""
-FORMAT = "248+251/best"
+FORMAT = "248+251/best"         # default if not specified in config
 FILE_FORMAT = "%NAME - %UPLOAD_DATE - %TITLE"
 DESTINATION_FORMAT = "%NAME"
 SCHEDULING_MODE = ""
@@ -99,29 +99,37 @@ def load_configs(configFile):
         print("Cannot find config file!!")
         logging.error(str(e))
         logging.error(traceback.format_exc())
-        logging.error(pprint(globals(), stream=f))
-        logging.error(pprint(locals(), stream=f))
+        logVariables()
         exit(0)
+
+
+def logVariables():
+    dicGlobal = globals()
+    dicLocal = locals()
+    logging.error("-------Global Vars------")
+    for key in dicGlobal.keys():
+        logging.error(str(key) + ' = ' + str(dicGlobal[key]).replace('\r', ' ').replace('\n', ' '))
+    logging.error("-------Local Vars------")
+    for key in dicLocal.keys():
+        logging.error(str(key) + ' = ' + str(dicLocal[key]).replace('\r', ' ').replace('\n', ' '))
 
 
 def get_icons(channel, chid, overwrite=False):
     logging.info("get_icons called")
     icon_log = open('data/icon_log.txt', 'r')
-    downloaded = icon_log.readlines()
+    temp = icon_log.readlines()
     icon_log.close()
-    downloaded = map(str.strip, downloaded)
+    downloaded = [None] * len(temp)
+    for d in range(0, len(temp)):
+        downloaded[d] = temp[d].strip()
 
+    print("Downloading Icons....")
     if len(channel) == 0:
         if not (chid[0] in downloaded):
             destinationDir = os.path.join('Download', channel[0])
             if not os.path.exists(destinationDir):
                 os.makedirs(destinationDir)
                 logging.info("Destination directory %s not found - created" & destinationDir)
-            #Was not sure of the intention here
-            #if not os.path.exists(destinationDir):
-            #    print("Creating Source Directory")
-            #    os.makedirs(destinationDir)
-            #    logging.info("Source directory %s not found - created" & destinationDir)
             try:
                 print("Downloading new icon for poster")
                 logging.info("Downloading new icon for channel id %s" % chid)
@@ -136,16 +144,11 @@ def get_icons(channel, chid, overwrite=False):
                     f.write(request.urlopen(icon_url).read())
                 with open('data/icon_log.txt', 'a') as f:
                     f.write(chid[0] + '\n')
-                #print("Moving Icon...")
-                #destinationDir = parseFormat(DESTINATION_FORMAT)
-                #destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
-                #shutil.move('poster.jpg', DESTINATION_FOLDER + 'poster.jpg')
             except Exception as e:
                 print("An error occured")
                 logging.error(str(e))
                 logging.error(traceback.format_exc())
-                logging.error(pprint(globals(), stream=f))
-                logging.error(pprint(locals(), stream=f))
+                logVariables()
 
     else:
         for j in range(0, len(channel)):
@@ -175,9 +178,9 @@ def get_icons(channel, chid, overwrite=False):
                     print("An error occurred")
                     logging.error(str(e))
                     logging.error(traceback.format_exc())
-                    logging.error(pprint(globals(), stream=f))
-                    logging.error(pprint(locals(), stream=f))
+                    logVariables()
             print()
+    print('Complete.')
 
 def safecopy(src, dst):
     logging.debug("safecopy requested from %s to %s" % (src, dst))
@@ -301,6 +304,12 @@ def main():
                     skip_download = False
                     video_download_count += 1
                     title = v.title.string
+                    temp = title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
+                    title = ""
+                    for t in temp:
+                        if t in valid_chars:
+                            title += t
+
                     url = v.link.get('href')
                     upload_date = v.published.string.split('T')[0]
                     id = v.id.string
@@ -322,7 +331,7 @@ def main():
                             ydl_opts = {
                                 'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',
                             # need to put channelid in here because what youtube-dl gives may be incorrect
-                                # 'simulate': 'true',
+                                #'simulate': 'true',
                                 'writethumbnail': 'true',
                                 'forcetitle': 'true',
                                 'ffmpeg_location': './ffmpeg/bin/',
@@ -356,8 +365,7 @@ def main():
                             skip_download = True
                             logging.error(str(e))
                             logging.error(traceback.format_exc())
-                            logging.error(pprint(globals(), stream=f))
-                            logging.error(pprint(locals(), stream=f))
+                            logVariables()
 
                         if not skip_download:
                             subscription_source_dir = 'Download/' + uploader + '/'
@@ -393,8 +401,7 @@ def main():
                                 print("An error occured moving file")
                                 logging.error(str(e))
                                 logging.error(traceback.format_exc())
-                                logging.error(pprint(globals(), stream=f))
-                                logging.error(pprint(locals(), stream=f))
+                                logVariables()
                             print()
 
             print()

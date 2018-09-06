@@ -54,3 +54,5 @@ Download/
 venv/
 ImageEditor
 error.log
+setup.log
+main.log

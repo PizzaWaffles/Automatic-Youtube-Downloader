@@ -353,6 +353,8 @@ def main():
                                 video_date = info_dict.get("upload_date", None)
                                 uploader = info_dict.get("uploader", None)
                                 is_live = info_dict.get("is_live", None)
+                                if 'entries' in info_dict:
+                                    is_live = info_dict['entries'][0]["is_live"]
                                 if not is_live:
                                     ydl.download([url])
                                 else:

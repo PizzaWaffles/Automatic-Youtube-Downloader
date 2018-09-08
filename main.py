@@ -31,16 +31,6 @@ DESTINATION_FORMAT = "%NAME"
 SCHEDULING_MODE = ""
 SCHEDULING_MODE_VALUE = ""
 
-configFile = 'data/config'
-logFileName = "data/log.txt"
-if not os.path.isfile('data/log.txt'):
-    logging.warning("data/log.txt not found... creating")
-    open('data/log.txt', 'a').close()
-if not os.path.isfile('data/icon_log.txt'):
-    open('data/icon_log.txt', 'a').close()
-    logging.warning("data/icon_log.txt not found... creating")
-if not os.path.exists('Download/'):
-    os.makedirs('Download/')
 
 def load_configs(configFile):
     global NUM_VIDEOS
@@ -182,11 +172,13 @@ def get_icons(channel, chid, overwrite=False):
             print()
     print('Complete.')
 
+
 def safecopy(src, dst):
     logging.debug("safecopy requested from %s to %s" % (src, dst))
     if os.path.isdir(dst):
         dst = os.path.join(dst, os.path.basename(src))
     shutil.copyfile(src, dst)
+
 
 def parseFormat(formating, name="", date="", title="", chID="", id=""):
     '''
@@ -215,6 +207,7 @@ def parseFormat(formating, name="", date="", title="", chID="", id=""):
             result += f
     return result
 
+
 def main():
     global NUM_VIDEOS
     global DESTINATION_FOLDER
@@ -223,7 +216,6 @@ def main():
     global FILE_FORMAT
     global SCHEDULING_MODE
     global SCHEDULING_MODE_VALUE
-
 
 
     number_of_runs_completed = 0
@@ -413,9 +405,24 @@ def main():
         logging.info("Program main.py ended")
         logging.info("============================================================")
 
+
 if __name__ == "__main__":
     logging.basicConfig(filename='main.log', level=logging.DEBUG, format='%(asctime)s %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p')
     logging.info("Program main.py started")
+
+    configFile = 'data/config'
+    logFileName = "data/log.txt"
+
+    if not os.path.isfile('data/log.txt'):
+        logging.warning("data/log.txt not found... creating")
+        open('data/log.txt', 'a').close()
+    if not os.path.isfile('data/icon_log.txt'):
+        open('data/icon_log.txt', 'a').close()
+        logging.warning("data/icon_log.txt not found... creating")
+    if not os.path.exists('Download/'):
+        os.makedirs('Download/')
+
     load_configs(configFile)
+
     main()

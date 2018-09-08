@@ -20,7 +20,7 @@ else:
     import urllib as request
 
 DEBUGLOGGING = False
-configFile = "data/config"
+
 
 
 # this should be deprecated in favor of logging.* calls
@@ -349,6 +349,9 @@ if __name__ == "__main__":
         datefmt='%m/%d/%Y %I:%M:%S %p')
 
     logging.info("Program setup.py started")
+
+    configFile = "data/config"
+
     main()
     logging.info("Program setup.py ended")
     logging.info("====================================================================")

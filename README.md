@@ -52,3 +52,18 @@ python main.py
 ```
 
 Remember the first time you run it, it will take a long time to download everything so be patient
+
+## WIP Features
+
+- Support for multiple config files, this will allow multiple setups for organization purposes.
+
+## Issues
+
+- If you get "Failed to download please update youtube-dl with 
+
+    `pip uninstall youtube-dl` 
+
+    `pip install youtube-dl`
+
+Any other issues please report on Github if you would like them fixed or looked at.
+

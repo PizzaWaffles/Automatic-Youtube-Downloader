@@ -306,8 +306,10 @@ def main():
                     title = re.sub(escapes, "", title)          # removes all escape characters
                     title = title.replace("-", " ").replace("\\", "").replace("/", "")
 
-                    url = v.link.get('href')
+                    upload_time = v.published.string.split('T')[1].split('+')[0].replace(':', '-')
                     upload_date = v.published.string.split('T')[0]
+                    upload_date = upload_date + "_" + upload_time
+                    url = v.link.get('href')
                     id = v.id.string
                     channelID = str(v.find('yt:channelid').contents[0])
                     # See if we already downloaded this
@@ -316,6 +318,7 @@ def main():
                     logFile.close()
                     if id in logFileContents:
                         logging.info("Video Already downloaded for id %s" % id)
+                        print("Video Already downloaded: " + id)
                     else:
                         filename_format = parseFormat(FILE_FORMAT, uploader, upload_date, title, channelID, id.replace("yt:video:", ""))
                         logging.debug("filename_formatted parsed to %s" % filename_format)
@@ -411,6 +414,8 @@ def main():
 
 
 if __name__ == "__main__":
+    if not os.path.isfile('main.log'):
+        open('main.log', 'a').close()
     loggingFile = open('main.log', 'a', encoding='utf-8')
     logging.basicConfig(stream=loggingFile, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     logging.info("Program main.py started")

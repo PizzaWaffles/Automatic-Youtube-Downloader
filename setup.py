@@ -366,21 +366,36 @@ def setup_config(api_key):
 
 
 def add_channel():
-    chName = get_input("Please enter the channel Name:")
+    chName = get_input("\n\nPlease enter the channel Name:")
     chID = get_input("Please enter the channel ID:")
-    cont = get_input("\nYou entered\nName:" + chName + "\nChannel ID:" + chID + "\nIf this is correct press enter...")
+    get_input("\nYou entered\nName:" + chName + "\nChannel ID:" + chID + "\nIf this is correct press enter...")
 
-    print("Writing to file...")
+    if ("UC" in chID) or (len(chID) is 24):
 
-    if os.path.isfile("data/youtubeData.xml"):
-        file = open("data/youtubeData.xml", 'w+')
-        file.seek(0, 2)
-        file.write('\n<outline title="' + xml.sax.saxutils.escape(chName) +
-                   '" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=' + xml.sax.saxutils.escape(chID) + '"/>\n')
-        file.close()
-        print("Complete.")
+        print("Writing to file...")
+
+        if os.path.isfile("data/youtubeData.xml"):
+            file = open("data/youtubeData.xml", 'r')
+            lines = file.readlines()
+            file.close()
+
+            file = open("data/youtubeData.xml", 'w')
+            lines.insert(2, '<outline title="' + xml.sax.saxutils.escape(chName) +
+                            '" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=' +
+                            xml.sax.saxutils.escape(chID) + '"/>\n')
+            file.writelines(lines)
+            file.close()
+            print("Complete.")
+        else:
+            file = open("data/youtubeData.xml", 'w')
+            file.write('<opml version="1.1">\n<body>\n')
+            file.write('<outline title="' + xml.sax.saxutils.escape(chName) +
+                            '" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=' +
+                            xml.sax.saxutils.escape(chID) + '"/>\n')
+            file.write('</body>\n</opml>')
+            file.close()
     else:
-        file = open("data/youtubeData.xml", 'w')
+        print("Invalid ID! Try again please")
 
 def main():
     if not os.path.exists('data/'):
@@ -399,7 +414,8 @@ def main():
         1. First Time Install
         2. Channel Selection
         3. Install Dependencies
-        4. Exit/Quit
+        4. Add Single Channel Manually
+        5. Exit/Quit
         """)
 
         menuSelection = get_input("What would you like to do? ")
@@ -415,9 +431,9 @@ def main():
             channel_selection()
         elif menuSelection == "3":
             install_dependencies()
-        #elif menuSelection == "4":
-        #    add_channel()
         elif menuSelection == "4":
+            add_channel()
+        elif menuSelection == "5":
             print("\n Goodbye")
             logging.info("User exited program")
 

@@ -12,7 +12,7 @@ Please download and install both if using with Plex.
 
 To install first download this repo, in the upper right of this repo click 'Download zip
 
-Download python [here](https://www.python.org/ftp/python/3.5.4/python-3.5.4.exe) currently Python 3.5 is supported but should work with other versions of Python (2.* and 3.*)
+Download python [here](https://www.python.org/ftp/python/3.5.4/python-3.5.4.exe) currently Python 3.5 is supported but should work with newer versions of python (3.5+)
 
 **When installing make sure to click 'Add to PATH'**
 

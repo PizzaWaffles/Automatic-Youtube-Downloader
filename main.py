@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import listparser as lp
 from bs4 import BeautifulSoup as bs
 import youtube_dl
@@ -295,12 +297,11 @@ def main():
                 if video_download_count < NUM_VIDEOS:
                     skip_download = False
                     video_download_count += 1
-                    title = v.title.string
-                    temp = title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
-                    title = ""
-                    for t in temp:
-                        if t in valid_chars:
-                            title += t
+                    title = str(v.title.string)
+                    #title = title.decode("utf-8")
+                    #temp = title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
+                    temp = title.encode("utf-8", errors="ignore").decode('utf-8', 'ignore')
+                    title = temp.replace('\n', '').replace('\t', '').replace('\r', '').replace('\\', '-').replace('/', '-')
 
                     url = v.link.get('href')
                     upload_date = v.published.string.split('T')[0]
@@ -407,8 +408,8 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename='main.log', level=logging.DEBUG, format='%(asctime)s %(message)s',
-                        datefmt='%m/%d/%Y %I:%M:%S %p')
+    loggingFile = open('main.log', 'a', encoding='utf-8')
+    logging.basicConfig(stream=loggingFile, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     logging.info("Program main.py started")
 
     configFile = 'data/config'
@@ -426,3 +427,4 @@ if __name__ == "__main__":
     load_configs(configFile)
 
     main()
+    loggingFile.close()

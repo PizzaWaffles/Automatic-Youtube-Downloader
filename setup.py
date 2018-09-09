@@ -301,6 +301,87 @@ def setup_config(api_key):
                 print("\nInvalid!!! Please try again.")
 
 
+
+        '''
+        Format for files and destination folders available options:
+            %NAME
+            %UPLOAD_DATE
+            %TITLE
+            %CHANNEL_ID
+            %VIDEO_ID
+        '''
+        loop = True
+        while (loop):
+            response = get_input("Please Choose a destination format:\n"
+                                 "1. ASS Scanner Default (%Channel_Name [Youtube-$Channel_ID])\n"
+                                 "2. Extended Personal Scanner Default (%Channel_Name)\n"
+                                 #"3. Custom"
+            )
+
+            logging.info("User selected %s for destination format" % response)
+
+            DESTINATION_FORMAT = ""
+            if response is "1":
+                print()
+                DESTINATION_FORMAT = "%NAME [Youtube-$CHANNEL_ID]"
+                loop = False
+            elif response is "2":
+                print()
+                DESTINATION_FORMAT = "%NAME"
+                loop = False
+            #elif response is "3":
+            #    print("HODLLLLLLLLLLLLLL")
+            #    loop = False
+            else:
+                print("Invalid Entry")
+
+            if loop is False:
+                f.write('DESTINATION_FORMAT=' + DESTINATION_FORMAT + '\n')
+
+        loop = True
+        while (loop):
+            response = get_input("Please Choose a file format:\n"
+                                 "1. ASS Scanner Default (%Video_Tile - [%Video_ID])\n"
+                                 "2. Extended Personal Scanner Default (%Channel_Name - %Upload_Date - %Video_Title)\n"
+                                 #"3. Custom"
+            )
+
+            logging.info("User selected %s for destination format" % response)
+            FILE_FORMAT = ""
+            if response is "1":
+                print()
+                FILE_FORMAT = "%TITLE - [%VIDEO_ID]"
+                loop = False
+            elif response is "2":
+                print()
+                FILE_FORMAT = "%NAME - %UPLOAD_DATE - %TITLE"
+                loop = False
+            #elif response is "3":
+            #    print("HODDLLLL")
+            #    loop = False
+            else:
+                print("Invalid Entry")
+            if loop is False:
+                f.write('FILE_FORMAT=' + FILE_FORMAT + '\n')
+
+
+def add_channel():
+    chName = get_input("Please enter the channel Name:")
+    chID = get_input("Please enter the channel ID:")
+    cont = get_input("\nYou entered\nName:" + chName + "\nChannel ID:" + chID + "\nIf this is correct press enter...")
+
+    print("Writing to file...")
+
+    if os.path.isfile("data/youtubeData.xml"):
+        file = open("data/youtubeData.xml", 'w+')
+        file.seek(0, 2)
+        file.write('\n<outline title="' + xml.sax.saxutils.escape(chName) +
+                   '" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=' + xml.sax.saxutils.escape(chID) + '"/>\n')
+        file.close()
+        print("Complete.")
+    else:
+        file = open("data/youtubeData.xml", 'w')
+
 def main():
     if not os.path.exists('data/'):
         logging.info("Data directory not found, creating...")
@@ -334,6 +415,8 @@ def main():
             channel_selection()
         elif menuSelection == "3":
             install_dependencies()
+        #elif menuSelection == "4":
+        #    add_channel()
         elif menuSelection == "4":
             print("\n Goodbye")
             logging.info("User exited program")

@@ -14,6 +14,7 @@ import time
 import sys
 from pprint import pprint
 import logging
+import re
 
 # Support for both python 2 and 3
 if sys.version_info[0] == 3:
@@ -300,8 +301,10 @@ def main():
                     title = str(v.title.string)
                     #title = title.decode("utf-8")
                     #temp = title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
-                    temp = title.encode("utf-8", errors="ignore").decode('utf-8', 'ignore')
-                    title = temp.replace('\n', '').replace('\t', '').replace('\r', '').replace('\\', '-').replace('/', '-')
+                    title = title.encode("utf-8", errors="ignore").decode('utf-8', 'ignore')
+                    escapes = '|'.join([chr(char) for char in range(1, 32)])
+                    title = re.sub(escapes, "", title)
+                    title = title.replace("-", " ")
 
                     url = v.link.get('href')
                     upload_date = v.published.string.split('T')[0]
@@ -314,7 +317,7 @@ def main():
                     if id in logFileContents:
                         logging.info("Video Already downloaded for id %s" % id)
                     else:
-                        filename_format = parseFormat(FILE_FORMAT, uploader, upload_date, title, channelID, id)
+                        filename_format = parseFormat(FILE_FORMAT, uploader, upload_date, title, channelID, id.replace("yt:video:", ""))
                         logging.debug("filename_formatted parsed to %s" % filename_format)
 
                         logging.info("Downloading - " + title + "  |  " + id)

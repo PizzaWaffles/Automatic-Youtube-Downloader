@@ -303,8 +303,8 @@ def main():
                     #temp = title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
                     title = title.encode("utf-8", errors="ignore").decode('utf-8', 'ignore')
                     escapes = '|'.join([chr(char) for char in range(1, 32)])
-                    title = re.sub(escapes, "", title)
-                    title = title.replace("-", " ")
+                    title = re.sub(escapes, "", title)          # removes all escape characters
+                    title = title.replace("-", " ").replace("\\", "").replace("/", "")
 
                     url = v.link.get('href')
                     upload_date = v.published.string.split('T')[0]

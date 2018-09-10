@@ -306,7 +306,7 @@ def main():
                     title = re.sub(escapes, "", title)          # removes all escape characters
                     title = title.replace("-", " ").replace("\\", "").replace("/", "")
 
-                    upload_time = v.published.string.split('T')[1].split('+')[0].replace(':', '-')
+                    upload_time = v.published.string.split('T')[1].split('+')[0].replace(':', '')[:-2]
                     upload_date = v.published.string.split('T')[0]
                     upload_date = upload_date + "_" + upload_time
                     url = v.link.get('href')

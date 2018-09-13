@@ -52,7 +52,10 @@ temp/
 data/
 Download/
 venv/
+myVenv/
 ImageEditor
 error.log
 setup.log
 main.log
+AYD.py
+gui.py

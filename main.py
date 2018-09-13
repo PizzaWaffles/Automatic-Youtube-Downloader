@@ -295,6 +295,7 @@ def main():
     data = lp.parse(YOUTUBE_XML_FILE)
 
     # init for usage outside of this for loop
+    skip_download = False
     xmltitle = [None] * len(data.feeds)
     xmlurl = [None] * len(data.feeds)
     channelIDlist = [None] * len(data.feeds)
@@ -312,16 +313,22 @@ def main():
     for i in range(0, len(xmltitle)):  # for every channel
         uploader = xmltitle[i]
         print(uploader)
-        url_data = urlopen(xmlurl[i],)
-        url_data = url_data.read()
-        xml = bs(url_data.decode('utf-8'), 'html.parser')
-        videoList = xml.find_all('entry')
-        # print(xml.find_all('entry'))
+        try:
+            url_data = urlopen(xmlurl[i], )
+            url_data = url_data.read()
+            xml = bs(url_data.decode('utf-8'), 'html.parser')
+            videoList = xml.find_all('entry')
+        except Exception as e:
+            print("Failed to Download")
+            skip_download = True
+            logging.error(str(e))
+            logging.error(traceback.format_exc())
+            logVariables()
 
         video_download_count = 0
         for v in videoList:  # for every video in channel
             # make sure we only download how many we want
-            if video_download_count < NUM_VIDEOS:
+            if (video_download_count < NUM_VIDEOS) and not skip_download:
                 skip_download = False
                 video_download_count += 1
                 title = str(v.title.string)

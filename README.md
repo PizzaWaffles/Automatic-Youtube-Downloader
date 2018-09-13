@@ -49,7 +49,7 @@ It will then take you through some config options
 python main.py [OPTIONS]
 ```
 
-# Options
+### Options
     main.py -c <config file(optional)>
                     -c: config file optional, if not provided will default to data/config
                     Multiple config files supported just separate with a space and surround with quotes ex.
@@ -57,11 +57,11 @@ python main.py [OPTIONS]
 
 ## Config File
 
-# Options
+### Options
 
 The config file is created when you run setup.py but here is a reference if you want to configure it yourself
 
-The file must have one option per line(doesn't matter what order), and must not have any spaces around the equals ex: FILE_FORMAT=%NAME - %UPLOAD_DATE - %TITLE
+The file must have one option per line(doesn't matter what order), and must not have any spaces around the equals ex: ```FILE_FORMAT=%NAME - %UPLOAD_DATE - %TITLE```
 
     API_KEY                     Your API key
     SCHEDULING_MODE_VALUE       If set in time mode this is what hour of the day to start, If set in delay mode this is the delay in seconds

@@ -43,15 +43,50 @@ If you have a fairly smallish amount of subscriptions then you can chose the 'se
 
 It will then take you through some config options
 
-## Running
-
-I'm working on a better way to run it right now but for now type this into a terminal or command prompt
+## Usage
 
 ```
-python main.py
+python main.py [OPTIONS]
 ```
 
-Remember the first time you run it, it will take a long time to download everything so be patient
+# Options
+    main.py -c <config file(optional)>
+                    -c: config file optional, if not provided will default to data/config
+                    Multiple config files supported just separate with a space and surround with quotes ex.
+                    main.py -c "config1.txt config2 data/config3"
+
+## Config File
+
+# Options
+
+The config file is created when you run setup.py but here is a reference if you want to configure it yourself
+
+The file must have one option per line(doesn't matter what order), and must not have any spaces around the equals ex: FILE_FORMAT=%NAME - %UPLOAD_DATE - %TITLE
+
+    API_KEY                     Your API key
+    SCHEDULING_MODE_VALUE       If set in time mode this is what hour of the day to start, If set in delay mode this is the delay in seconds
+    NUM_VIDEOS                  How many videos to download at a time (max 15)
+    DESTINATION_FOLDER          The folder to move channels into
+    VIDEO_FORMAT                The video quality to download at (default=248+251/best)
+    FILE_FORMAT                 Format for files
+                                    Supported tags:
+                                        %NAME
+                                        %UPLOAD_DATE
+                                        %TITLE
+                                        %CHANNEL_ID
+                                        %VIDEO_ID
+    DESTINATION_FORMAT          This is the folder the video files will go in, usually the channel name but below are the supported tags
+                                    Supported tags:
+                                        %NAME
+                                        %UPLOAD_DATE
+                                        %TITLE
+                                        %CHANNEL_ID
+                                        %VIDEO_ID
+    SCHEDULING_MODE             Mode for when to run things
+                                    Options:
+                                        TIME_OF_DAY
+                                        RUN_ONCE
+                                        DELAY
 
 ## WIP Features
 

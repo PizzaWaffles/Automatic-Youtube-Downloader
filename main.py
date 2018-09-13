@@ -460,16 +460,16 @@ if __name__ == "__main__":
         opts, args = getopt.getopt(sys.argv[1:], "hc:", ["config="])
     except getopt.GetoptError:
         print('main.py -c <config file(optional)>\n'
-            '   -c: config file optional, if not provided will default to data/config'
-            '       Multiple config files supported just separate with a space and surround with quotes ex.'
-            '       main.py -c "config1.txt config2 data/config3"')
+            '   -c: config file optional, if not provided will default to data/config\n'
+            '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
+            '       main.py -c "config1.txt config2 data/config3"\n')
         exit(2)
     for opt, arg in opts:
         if opt == '-h':
             print('main.py -c <config file(optional)>\n'
-            '   -c: config file optional, if not provided will default to data/config'
-            '       Multiple config files supported just separate with a space and surround with quotes ex.'
-            '       main.py -c "config1.txt config2 data/config3"')
+            '   -c: config file optional, if not provided will default to data/config\n'
+            '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
+            '       main.py -c "config1.txt config2 data/config3"\n')
             exit()
         elif opt in ("-c", "--config"):
             configFileInput = arg

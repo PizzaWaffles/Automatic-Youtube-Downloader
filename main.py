@@ -295,7 +295,6 @@ def main():
     data = lp.parse(YOUTUBE_XML_FILE)
 
     # init for usage outside of this for loop
-    skip_download = False
     xmltitle = [None] * len(data.feeds)
     xmlurl = [None] * len(data.feeds)
     channelIDlist = [None] * len(data.feeds)
@@ -311,6 +310,7 @@ def main():
     get_icons(xmltitle, channelIDlist)
 
     for i in range(0, len(xmltitle)):  # for every channel
+        skip_download = False
         uploader = xmltitle[i]
         print(uploader)
         try:
@@ -319,7 +319,7 @@ def main():
             xml = bs(url_data.decode('utf-8'), 'html.parser')
             videoList = xml.find_all('entry')
         except Exception as e:
-            print("Failed to Download")
+            print("Failed to Download Channel list")
             skip_download = True
             logging.error(str(e))
             logging.error(traceback.format_exc())

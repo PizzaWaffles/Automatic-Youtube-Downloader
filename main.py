@@ -91,6 +91,7 @@ def load_configs(configFile):
                 elif data[0] == "YOUTUBE_XML_FILE":
                     YOUTUBE_XML_FILE = str(data[1])
                     logging.info("Setting %s to %s" % (data[0], data[1]))
+        return NUM_VIDEOS, DESTINATION_FOLDER, API_KEY, FORMAT, FILE_FORMAT, DESTINATION_FORMAT, SCHEDULING_MODE, SCHEDULING_MODE_VALUE, YOUTUBE_XML_FILE
 
     except Exception as e:
         logging.error("Cannot find config file!!")
@@ -319,7 +320,8 @@ def main():
             xml = bs(url_data.decode('utf-8'), 'html.parser')
             videoList = xml.find_all('entry')
         except Exception as e:
-            print("Failed to Download Channel list")
+            print("Failed to Download Channel list due to html error, check logs")
+            videoList = ""
             skip_download = True
             logging.error(str(e))
             logging.error(traceback.format_exc())

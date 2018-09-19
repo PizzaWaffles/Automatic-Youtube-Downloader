@@ -459,23 +459,23 @@ if __name__ == "__main__":
         try:
             opts, args = getopt.getopt(sys.argv[1:], "hc:d:s", ["config=", "data=", "skip"])
         except getopt.GetoptError:
-            print('main.py -c <config file(optional)> -d <youtube data file> -s\n'
+            print('\n\nmain.py -c <config file> -d <youtube data file> -s\n\n'
                   '   -c,--config: config file optional, if not provided will default to data/config\n'
                   '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
                   '       main.py -c "config1.txt config2 data/config3"\n'
                   '   -d,--data: data file optional, if not provided will default to data/youtubeData.xml\n'
                   '       This is the file output of channel names and urls.\n'
-                  '   -s,--skip: flag to skip dependency check')
+                  '   -s,--skip: flag to skip dependency check\n\n')
             exit(2)
         for opt, arg in opts:
             if opt == '-h':
-                print('main.py -c <config file(optional)> -d <youtube data file> -s\n'
+                print('\n\nmain.py -c <config file> -d <youtube data file> -s\n\n'
                       '   -c,--config: config file optional, if not provided will default to data/config\n'
                       '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
                       '       main.py -c "config1.txt config2 data/config3"\n'
                       '   -d,--data: data file optional, if not provided will default to data/youtubeData.xml\n'
                       '       This is the file output of channel names and urls.\n'
-                      '   -s,--skip: flag to skip dependency check')
+                      '   -s,--skip: flag to skip dependency check\n\n')
                 exit(2)
             elif opt in ("-c", "--config"):
                 configFileInput = arg

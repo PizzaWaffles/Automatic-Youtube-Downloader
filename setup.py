@@ -10,6 +10,7 @@ from sys import platform
 import subprocess
 import xml.sax.saxutils
 import logging
+import getopt
 
 # support for python 3 and 2
 if sys.version_info[0] == 3:
@@ -80,7 +81,7 @@ def install_dependencies():
     print("Complete.")
 
 
-def setup_youtube():
+def setup_youtube(dataFile):
     logging.debug("setup_youtube function called")
     api_key = ""
     setup_not_complete = True
@@ -88,16 +89,16 @@ def setup_youtube():
         print("\n\nSetting up Youtube configs")
         print("Please goto https://www.youtube.com/subscription_manager")
         print("On the bottom of the page click 'Export Subscriptions'")
-        print("Put that file in the data directory so it looks like data/subscription_manager.xml")
+        print("Put that file in the data directory so it looks like " + dataFile)
         get_input("Click enter to continue.....")
 
-        if os.path.exists('data/subscription_manager.xml'):
+        if os.path.exists(dataFile):
             print("\nFile Found\n\n")
-            logging.info("subscription_manager.xml was found")
+            logging.info(dataFile + " was found")
             setup_not_complete = False
         else:
             print("File Not Found!! Please make sure you have it in th correct directory and its named correctly")
-            logging.warning("subscription_manager.xml was NOT found")
+            logging.warning(dataFile + " was NOT found")
             logging.debug("data folder contents:\n" + str(glob.glob("data/*")))
 
     setup_not_complete = True
@@ -128,7 +129,7 @@ def setup_youtube():
     return api_key  # shouldn't reach this but just in case
 
 
-def channel_selection():
+def channel_selection(dataFile, inputFile="data/subscription_manager.xml"):
     import listparser as lp
     logging.debug("Channel_selection started")
     # This function parses OPML data and allows the user to select which channels to be included
@@ -138,7 +139,7 @@ def channel_selection():
     while loop:
         selection = get_input(
             "Would you like to select which channels you want to include, or do you want to include all of them?\n"
-            "If you include all channels you can remove them manually by editing data/youtubeData.xml and deleting the"
+            "If you include all channels you can remove them manually by editing " + dataFile + " and deleting the"
             " entire line of the channel you do not want (Choose this option if you have a lot of subscriptions)\n"
             "Enter 'all' to keep all subscriptions or 'select' to select which channels (or 'a' or 's'):").lower()
 
@@ -158,10 +159,10 @@ def channel_selection():
             print("Invalid Selection!!! Try again.")
             logging.warning("User selected invalid entry")
 
-    logging.debug("Opening data/youtubeData.xml for writing")
-    file = open("data/youtubeData.xml", 'w')
-    logging.debug("Parsing data/subscription_manager.xml")
-    d = lp.parse('data/subscription_manager.xml')
+    logging.debug("Opening " + dataFile + " for writing")
+    file = open(dataFile, 'w')
+    logging.debug("Parsing " + inputFile)
+    d = lp.parse(inputFile)
     l = d.feeds
     file.write('<opml version="1.1">\n<body>\n')
     num_channels = len(l)
@@ -208,11 +209,11 @@ def channel_selection():
 
     file.write('</body>\n</opml>')
     file.close()
-    logging.debug("Channels saved to youtubeData.xml")
+    logging.debug("Channels saved to" + dataFile)
     print("\nComplete.")
 
 
-def setup_config(api_key):
+def setup_config(api_key, configFile):
     logging.info("setup_config function called")
     print("\n\n\nSetting up Config file")
     with open(configFile, 'w') as f:
@@ -365,7 +366,7 @@ def setup_config(api_key):
                 f.write('FILE_FORMAT=' + FILE_FORMAT + '\n')
 
 
-def add_channel():
+def add_channel(dataFile):
     chName = get_input("\n\nPlease enter the channel Name:")
     chID = get_input("Please enter the channel ID:")
     get_input("\nYou entered\nName:" + chName + "\nChannel ID:" + chID + "\nIf this is correct press enter...")
@@ -374,12 +375,12 @@ def add_channel():
 
         print("Writing to file...")
 
-        if os.path.isfile("data/youtubeData.xml"):
-            file = open("data/youtubeData.xml", 'r')
+        if os.path.isfile(dataFile):
+            file = open(dataFile, 'r')
             lines = file.readlines()
             file.close()
 
-            file = open("data/youtubeData.xml", 'w')
+            file = open(dataFile, 'w')
             lines.insert(2, '<outline title="' + xml.sax.saxutils.escape(chName) +
                             '" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=' +
                             xml.sax.saxutils.escape(chID) + '"/>\n')
@@ -387,17 +388,18 @@ def add_channel():
             file.close()
             print("Complete.")
         else:
-            file = open("data/youtubeData.xml", 'w')
+            file = open(dataFile, 'w')
             file.write('<opml version="1.1">\n<body>\n')
             file.write('<outline title="' + xml.sax.saxutils.escape(chName) +
-                            '" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=' +
-                            xml.sax.saxutils.escape(chID) + '"/>\n')
+                       '" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=' +
+                        xml.sax.saxutils.escape(chID) + '"/>\n')
             file.write('</body>\n</opml>')
             file.close()
     else:
         print("Invalid ID! Try again please")
 
-def main():
+
+def main(configFile, dataFile, skipDep):
     if not os.path.exists('data/'):
         logging.info("Data directory not found, creating...")
         os.makedirs('data/')
@@ -422,17 +424,18 @@ def main():
 
         if menuSelection == "1":
             logging.info("At main menu, user selected option %s" % menuSelection)
-            install_dependencies()
-            api_key = setup_youtube()
-            channel_selection()
-            setup_config(api_key, )
+            if not skipDep:
+                install_dependencies()
+            api_key = setup_youtube(dataFile)
+            channel_selection(dataFile)
+            setup_config(api_key, configFile)
             print('\n\n\n----------This completes the setup you may now exit-----------\n')
         elif menuSelection == "2":
-            channel_selection()
+            channel_selection(dataFile)
         elif menuSelection == "3":
             install_dependencies()
         elif menuSelection == "4":
-            add_channel()
+            add_channel(dataFile)
         elif menuSelection == "5":
             print("\n Goodbye")
             logging.info("User exited program")
@@ -449,8 +452,62 @@ if __name__ == "__main__":
 
     logging.info("Program setup.py started")
 
-    configFile = "data/config"
+    configFileInput = ''
+    dataFileInput = ''
+    skipDep = False
+    if len(sys.argv) > 0:
+        try:
+            opts, args = getopt.getopt(sys.argv[1:], "hc:d:s", ["config=", "data=", "skip"])
+        except getopt.GetoptError:
+            print('main.py -c <config file(optional)> -d <youtube data file> -s\n'
+                  '   -c,--config: config file optional, if not provided will default to data/config\n'
+                  '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
+                  '       main.py -c "config1.txt config2 data/config3"\n'
+                  '   -d,--data: data file optional, if not provided will default to data/youtubeData.xml\n'
+                  '       This is the file output of channel names and urls.\n'
+                  '   -s,--skip: flag to skip dependency check')
+            exit(2)
+        for opt, arg in opts:
+            if opt == '-h':
+                print('main.py -c <config file(optional)> -d <youtube data file> -s\n'
+                      '   -c,--config: config file optional, if not provided will default to data/config\n'
+                      '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
+                      '       main.py -c "config1.txt config2 data/config3"\n'
+                      '   -d,--data: data file optional, if not provided will default to data/youtubeData.xml\n'
+                      '       This is the file output of channel names and urls.\n'
+                      '   -s,--skip: flag to skip dependency check')
+                exit(2)
+            elif opt in ("-c", "--config"):
+                configFileInput = arg
+            elif opt in ("-d", "--data"):
+                dataFileInput = arg
+            elif opt in ("-s", "--skip"):
+                skipDep = True
+                print("--Skipping Dependency check")
 
-    main()
+        if configFileInput == '':
+            configFile = 'data/config'
+            #print('--Using data/config')
+        else:
+            configFile = configFileInput
+
+        if dataFileInput == '':
+            dataFile = 'data/youtubeData.xml'
+        else:
+            dataFile = dataFileInput
+    else:
+        # No arguments
+        configFile = 'data/config'
+        dataFile = 'data/youtubeData.xml'
+
+    if dataFileInput == '':
+        dataFileInput = 'data/youtubeData.xml'
+        #print('--Using data/youtubeData.xml')
+    else:
+        dataFile = dataFileInput
+
+    print("--Outputting data to:" + dataFile)
+    print("--Config file:" + configFile)
+    main(configFile, dataFile, skipDep)
     logging.info("Program setup.py ended")
     logging.info("====================================================================")

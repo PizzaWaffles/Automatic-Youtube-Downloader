@@ -100,10 +100,8 @@ To setup filters navigate to data/filters, then create a file with the name bein
 
 Each line in that file is a seperate filter for that channel, if there are conflicts it will resort to the top most filter argument. The formatting goes like so
     
-'''
     deny-only "*Ear Biscuits*"
     allow-only "*GAME*"
-'''
 
 - allow-only: In this mode it will block everything but what is listed
 - deny-only: IN this mode it will block anything matching what is given, IMPORTANT:make sure to put before allow-only commands or they might get ignored

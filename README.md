@@ -43,6 +43,10 @@ If you have a fairly smallish amount of subscriptions then you can chose the 'se
 
 It will then take you through some config options
 
+## Updating
+
+To update download this Repo again, unzip file, then copy over you entire 'data' directory from your old directory to the one you just unzipped. Thats it!
+
 ## Usage
 
 ```
@@ -88,9 +92,28 @@ The file must have one option per line(doesn't matter what order), and must not 
                                         RUN_ONCE
                                         DELAY
 
+## Filters
+
+With the custom filters you can cherry pick which videos you would like to download automatically, there is 2 modes for the filters to work either "allow-only" or "deny-only" mode
+
+To setup filters navigate to data/filters, then create a file with the name being the channel ID of the channel you want to filter. For example the name of a file would look like "UC4PooiX37Pld1T8J5SYT-SQ"
+
+Each line in that file is a seperate filter for that channel, if there are conflicts it will resort to the top most filter argument. The formatting goes like so
+    
+    '''
+    deny-only "*Ear Biscuits*"
+    allow-only "*GAME*"
+    '''
+
+- allow-only: In this mode it will block everything but what is listed
+- deny-only: IN this mode it will block anything matching what is given, IMPORTANT:make sure to put before allow-only commands or they might get ignored
+
+The only wildcard supported at the moment is *. The default behavior without wildcards is to exact match, make sure to use * if you want to match a part of a title.
+
+
 ## WIP Features
 
-- Support for multiple config files, this will allow multiple setups for organization purposes.
+
 
 ## Issues
 

@@ -22,7 +22,7 @@ else:
     from urllib import urlopen
     import urllib as request
 
-#GLOBAL VARS
+# GLOBAL VARS
 NUM_VIDEOS = 0
 DESTINATION_FOLDER = ""
 API_KEY = ""
@@ -33,6 +33,8 @@ SCHEDULING_MODE = ""
 SCHEDULING_MODE_VALUE = ""
 YOUTUBE_XML_FILE= "data/youtubeData.xml"
 
+# Constant
+FILTER_FOLDER = "data/filters/"
 
 
 def load_configs(configFile):
@@ -216,6 +218,46 @@ def parseFormat(formating, name="", date="", title="", chID="", id=""):
     return result
 
 
+class filters:
+    filtersListType = []
+    filtersListArg = []
+    channelID = []
+
+    def __init__(self):
+        if not os.path.exists(FILTER_FOLDER):
+            os.makedirs(FILTER_FOLDER)
+        files = os.listdir(FILTER_FOLDER)
+        for i in range(0, len(files)):
+            handler = open(FILTER_FOLDER + files[i])
+            filters = handler.readlines()
+
+            for j in range(0, len(filters)):  # filters per file/channel
+                temp = filters[j].strip().split('"')
+                self.filtersListType.append(temp[0].replace(" ", ""))
+                self.filtersListArg.append(temp[1])
+                self.channelID.append(files[i])
+
+                #print(self.channelID)
+
+    def download_check(self, title, chID):
+        # Returns true if filters don't match title
+        for idx, channel in enumerate(self.channelID):
+            if chID == channel:
+                arg = self.filtersListArg[idx].replace('*', '.*')
+                if re.search(arg, title):
+                    if self.filtersListType[idx] == "deny-only":
+                        return False
+                    elif self.filtersListType[idx] == "allow-only":
+                        return True
+
+        # Nothing matches if we find a allow-only tag we need to deny everything else
+        for idx in range(0, len(self.channelID)):
+            if chID == self.channelID[idx]:
+                if "allow-only" == self.filtersListType[idx]:
+                    return False
+        return True
+
+
 class scheduling:
     global NUM_VIDEOS
     global DESTINATION_FOLDER
@@ -295,6 +337,8 @@ def main():
 
     data = lp.parse(YOUTUBE_XML_FILE)
 
+    my_filters = filters()
+
     # init for usage outside of this for loop
     xmltitle = [None] * len(data.feeds)
     xmlurl = [None] * len(data.feeds)
@@ -313,7 +357,7 @@ def main():
     for i in range(0, len(xmltitle)):  # for every channel
         skip_download = False
         uploader = xmltitle[i]
-        print(uploader)
+        #print(uploader)
         try:
             url_data = urlopen(xmlurl[i], )
             url_data = url_data.read()
@@ -332,7 +376,9 @@ def main():
             # make sure we only download how many we want
             if (video_download_count < NUM_VIDEOS) and not skip_download:
                 skip_download = False
+                skip_move = False
                 video_download_count += 1
+
                 title = str(v.title.string)
                 #title = title.decode("utf-8")
                 #temp = title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
@@ -353,57 +399,64 @@ def main():
                 logFile.close()
                 if id in logFileContents:
                     logging.info("Video Already downloaded for id %s" % id)
-                    print("Video Already downloaded: " + id)
+                    #print("Video Already downloaded: " + id)
                 else:
-                    filename_format = parseFormat(FILE_FORMAT, uploader, upload_date, title, channelID, id.replace("yt:video:", ""))
+                    if not my_filters.download_check(title, channelID):
+                        #print("Video Filtered: " + title)
+                        logging.info("Video Filtered: Title:" + title + "ChannelID:" + channelID)
+                        skip_download = True
+                        skip_move = True
+
+                    filename_format = parseFormat(FILE_FORMAT, uploader, upload_date, title, channelID,
+                        id.replace("yt:video:", ""))
                     logging.debug("filename_formatted parsed to %s" % filename_format)
 
-                    logging.info("Downloading - " + title + "  |  " + id)
-                    logging.info("Channel - " + str(xmltitle[i]) + "  |  " + channelID)
-
-                    if os.name == 'nt':  # if windows use supplied ffmpeg
-                        ydl_opts = {
-                            'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',
-                        # need to put channelid in here because what youtube-dl gives may be incorrect
-                            #'simulate': 'true',
-                            'writethumbnail': 'true',
-                            'forcetitle': 'true',
-                            'ffmpeg_location': './ffmpeg/bin/',
-                            'format': FORMAT
-                        }
-                    else:
-                        # not sure here
-                        ydl_opts = {
-                            'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',
-                            'writethumbnail': 'true',
-                            'forcetitle': 'true',
-                            'format': FORMAT
-                        }
-                    try:
-                        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                            info_dict = ydl.extract_info(url, download=False)
-                            video_id = info_dict.get("id", None)
-                            video_title = info_dict.get("title", None)
-                            video_date = info_dict.get("upload_date", None)
-                            uploader = info_dict.get("uploader", None)
-                            is_live = info_dict.get("is_live", None)
-                            if 'entries' in info_dict:
-                                is_live = info_dict['entries'][0]["is_live"]
-                            if not is_live:
-                                ydl.download([url])
-                            else:
-                                print("Warning! This video is streaming live, it will be skipped")
-                                logging.info("Warning! This video is streaming live, it will be skipped")
-                                skip_download = True
-
-                    except Exception as e:
-                        print("Failed to Download")
-                        skip_download = True
-                        logging.error(str(e))
-                        logging.error(traceback.format_exc())
-                        logVariables()
-
                     if not skip_download:
+                        logging.info("Downloading - " + title + "  |  " + id)
+                        logging.info("Channel - " + str(xmltitle[i]) + "  |  " + channelID)
+                        if os.name == 'nt':  # if windows use supplied ffmpeg
+                            ydl_opts = {
+                                'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',
+                            # need to put channelid in here because what youtube-dl gives may be incorrect
+                                #'simulate': 'true',
+                                'writethumbnail': 'true',
+                                'forcetitle': 'true',
+                                'ffmpeg_location': './ffmpeg/bin/',
+                                'format': FORMAT
+                            }
+                        else:
+                            # not sure here
+                            ydl_opts = {
+                                'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',
+                                'writethumbnail': 'true',
+                                'forcetitle': 'true',
+                                'format': FORMAT
+                            }
+                        try:
+                            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                                info_dict = ydl.extract_info(url, download=False)
+                                video_id = info_dict.get("id", None)
+                                video_title = info_dict.get("title", None)
+                                video_date = info_dict.get("upload_date", None)
+                                uploader = info_dict.get("uploader", None)
+                                is_live = info_dict.get("is_live", None)
+                                if 'entries' in info_dict:
+                                    is_live = info_dict['entries'][0]["is_live"]
+                                if not is_live:
+                                    ydl.download([url])
+                                else:
+                                    print("Warning! This video is streaming live, it will be skipped")
+                                    logging.info("Warning! This video is streaming live, it will be skipped")
+                                    skip_move = True
+
+                        except Exception as e:
+                            print("Failed to Download")
+                            skip_download = True
+                            logging.error(str(e))
+                            logging.error(traceback.format_exc())
+                            logVariables()
+
+                    if not skip_move:
                         subscription_source_dir = 'Download/' + uploader + '/'
                         subscription_destination_dir = os.path.join(DESTINATION_FOLDER, uploader)
                         logging.debug("subscription_source_dir is %s" % subscription_source_dir)
@@ -438,9 +491,9 @@ def main():
                             logging.error(str(e))
                             logging.error(traceback.format_exc())
                             logVariables()
-                        print()
+                        #print()
 
-        print()
+        #print()
     logging.info("Program main.py ended")
     logging.info("============================================================")
     return ""
@@ -466,7 +519,7 @@ if __name__ == "__main__":
 
     configFileInput = ''
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hc:", ["config="])
+        opts, args = getopt.getopt(sys.argv[1:], "hc", ["config="])
     except getopt.GetoptError:
         print('main.py -c <config file(optional)>\n'
             '   -c: config file optional, if not provided will default to data/config\n'
@@ -500,7 +553,7 @@ if __name__ == "__main__":
     sch = scheduling()      # init class
     sch.increase_run()
     while True:
-        if type(configFile) is list :
+        if type(configFile) is list:
             for l in configFile:    # for every config file run main
                 print("Running config:'" + l + "'")
                 load_configs(l)

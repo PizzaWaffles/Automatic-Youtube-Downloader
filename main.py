@@ -124,7 +124,7 @@ def get_icons(channel, chid, overwrite=False):
     for d in range(0, len(temp)):
         downloaded[d] = temp[d].strip()
 
-    print("Downloading Icons....")
+    #print("Downloading Icons....")
     if len(channel) == 0:
         if not (chid[0] in downloaded):
             destinationDir = os.path.join('Download', channel[0])
@@ -180,7 +180,7 @@ def get_icons(channel, chid, overwrite=False):
                     logging.error(str(e))
                     logging.error(traceback.format_exc())
                     logVariables()
-    print('Complete.')
+    #print('Complete.')
 
 
 def safecopy(src, dst):
@@ -234,12 +234,14 @@ class filters:
             for j in range(0, len(filters)):  # filters per file/channel
                 temp = filters[j].strip().split('"')
                 self.filtersListType.append(temp[0].replace(" ", ""))
-                self.filtersListArg.append(temp[1])
+                self.filtersListArg.append(temp[1].lower())
                 self.channelID.append(files[i])
 
                 #print(self.channelID)
 
     def download_check(self, title, chID):
+        title = title.lower()
+
         # Returns true if filters don't match title
         for idx, channel in enumerate(self.channelID):
             if chID == channel:
@@ -448,10 +450,17 @@ def main():
                                     print("Warning! This video is streaming live, it will be skipped")
                                     logging.info("Warning! This video is streaming live, it will be skipped")
                                     skip_move = True
+                                    
+                            if os.path.exists('Download/' + uploader + '/'):
+                                for file in os.listdir('Download/' + uploader + '/'):
+                                    if file.endswith(".part"):
+                                        skip_move = True
+                                        print("Failed to Download. Will Retry on next Run.")
+                                        logging.error("Found .part file. Failed to Download. Will Retry next Run.")
 
                         except Exception as e:
                             print("Failed to Download")
-                            skip_download = True
+                            skip_move = True
                             logging.error(str(e))
                             logging.error(traceback.format_exc())
                             logVariables()
@@ -491,9 +500,10 @@ def main():
                             logging.error(str(e))
                             logging.error(traceback.format_exc())
                             logVariables()
-                        #print()
 
-        #print()
+            skip_download = False
+            skip_move = False
+
     logging.info("Program main.py ended")
     logging.info("============================================================")
     return ""
@@ -555,11 +565,11 @@ if __name__ == "__main__":
     while True:
         if type(configFile) is list:
             for l in configFile:    # for every config file run main
-                print("Running config:'" + l + "'")
+                #print("Running config:'" + l + "'")
                 load_configs(l)
                 main()
         else:
-            print("Running config:'" + configFile + "'")
+            #print("Running config:'" + configFile + "'")
             load_configs(configFile)
             main()
         sch.run()

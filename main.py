@@ -126,30 +126,7 @@ def get_icons(channel, chid, overwrite=False):
 
     #print("Downloading Icons....")
     if len(channel) == 0:
-        if not (chid[0] in downloaded):
-            destinationDir = os.path.join('Download', channel[0])
-            if not os.path.exists(destinationDir):
-                os.makedirs(destinationDir)
-                logging.info("Destination directory %s not found - created" & destinationDir)
-            try:
-                print("Downloading new icon for poster")
-                logging.info("Downloading new icon for channel id %s" % chid)
-                url_data = urlopen(
-                    'https://www.googleapis.com/youtube/v3/channels?part=snippet&id='
-                    + chid + '&fields=items%2Fsnippet%2Fthumbnails&key=' + API_KEY)
-                data = url_data.read()
-                data = json.loads(data.decode('utf-8'))
-                icon_url = data['items'][0]['snippet']['thumbnails']['high']['url']
-                logging.info("Found icon url %s" % icon_url)
-                with open(destinationDir + "/poster.jpg", 'wb') as f:
-                    f.write(request.urlopen(icon_url).read())
-                with open('data/icon_log.txt', 'a') as f:
-                    f.write(chid[0] + '\n')
-            except Exception as e:
-                print("An error occured")
-                logging.error(str(e))
-                logging.error(traceback.format_exc())
-                logVariables()
+		print("Error youtubeData.xml file empty please run setup.py to fix")
 
     else:
         for j in range(0, len(channel)):

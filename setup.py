@@ -426,7 +426,7 @@ def main(configFile, dataFile, skipDep):
             logging.info("At main menu, user selected option %s" % menuSelection)
             if not skipDep:
                 install_dependencies()
-            api_key = setup_youtube(dataFile)
+            api_key = setup_youtube("data/subscription_manager.xml")
             channel_selection(dataFile)
             setup_config(api_key, configFile)
             print('\n\n\n----------This completes the setup you may now exit-----------\n')

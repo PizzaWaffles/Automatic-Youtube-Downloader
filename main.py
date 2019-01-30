@@ -278,6 +278,7 @@ class scheduling:
             logging.info("Evaluating run once schedule mode")
             if self.did_i_just_complete_run:
                 logging.info("  Just completed run, ending")
+                sys.exit(0)
                 #break
             else:
                 logging.info("  Starting run once")

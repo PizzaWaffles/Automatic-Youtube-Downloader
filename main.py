@@ -9,11 +9,14 @@ import json
 #from distutils.dir_util import copy_tree
 from datetime import datetime
 import time
-import fcntl, sys, getopt
+import sys, getopt
 from pprint import pprint
 import logging
 import re
 
+if os.name != 'nt':
+    import fnctl
+    
 # Support for both python 2 and 3
 if sys.version_info[0] == 3:
     from urllib.request import urlopen
@@ -26,7 +29,7 @@ else:
 NUM_VIDEOS = 0
 DESTINATION_FOLDER = ""
 API_KEY = ""
-FORMAT = "248+251/best"         # default if not specified in config
+FORMAT = "248+251/299+140/137+140/best"         # default if not specified in config
 FILE_FORMAT = "%NAME - %UPLOAD_DATE - %TITLE"
 DESTINATION_FORMAT = "%NAME"
 SCHEDULING_MODE = ""
@@ -365,7 +368,7 @@ def main():
                 title = title.encode("utf-8", errors="ignore").decode('utf-8', 'ignore')
                 escapes = '|'.join([chr(char) for char in range(1, 32)])
                 title = re.sub(escapes, "", title)          # removes all escape characters
-                title = title.replace("-", " ").replace("\\", "").replace("/", "")
+                title = title.replace("-", " ").replace("\\", "").replace("/", "").replace("%", "")
 
                 upload_time = v.published.string.split('T')[1].split('+')[0].replace(':', '')[:-2]
                 upload_date = v.published.string.split('T')[0]
@@ -402,6 +405,7 @@ def main():
                                 'writethumbnail': 'true',
                                 'forcetitle': 'true',
                                 'ffmpeg_location': './ffmpeg/bin/',
+                                'ignoreerrors': 'true',
                                 'format': FORMAT
                             }
                         else:
@@ -415,6 +419,8 @@ def main():
                         try:
                             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                                 info_dict = ydl.extract_info(url, download=False)
+                                quality = info_dict.get("format", None)
+                                print("Video Quality: " + quality)
                                 video_id = info_dict.get("id", None)
                                 video_title = info_dict.get("title", None)
                                 video_date = info_dict.get("upload_date", None)
@@ -431,7 +437,7 @@ def main():
                                     
                             if os.path.exists('Download/' + uploader + '/'):
                                 for file in os.listdir('Download/' + uploader + '/'):
-                                    if file.endswith(".part"):
+                                    if fnmatch.fnmatch(file, "*" + video_title + "*.part"):
                                         skip_move = True
                                         print("Failed to Download. Will Retry on next Run.")
                                         logging.error("Found .part file. Failed to Download. Will Retry next Run.")
@@ -500,14 +506,15 @@ if __name__ == "__main__":
     logging.info("Program main.py started")
 
     # check if another instance is running
-    pid_file = 'program.pid'
-    fp = open(pid_file, 'w')
-    try:
-        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except IOError:
-        print("Another instance is running")
-        logging.error("Another instance is running")
-        sys.exit(0)
+    if os.name != 'nt':
+        pid_file = 'program.pid'
+        fp = open(pid_file, 'w')
+        try:
+            fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except IOError:
+            print("Another instance is running")
+            logging.error("Another instance is running")
+            sys.exit(0)
 
     logFileName = "data/log.txt"
 

@@ -126,7 +126,7 @@ def get_icons(channel, chid, overwrite=False):
 
     #print("Downloading Icons....")
     if len(channel) == 0:
-		print("Error youtubeData.xml file empty please run setup.py to fix")
+        print("Error youtubeData.xml file empty please run setup.py to fix")
 
     else:
         for j in range(0, len(channel)):

@@ -9,7 +9,7 @@ import json
 #from distutils.dir_util import copy_tree
 from datetime import datetime
 import time
-import sys, getopt
+import fcntl, sys, getopt
 from pprint import pprint
 import logging
 import re
@@ -487,11 +487,26 @@ def main():
 
 
 if __name__ == "__main__":
+    # change working directory to the location of main.py
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    os.chdir(dname)
+    
     if not os.path.isfile('main.log'):
         open('main.log', 'a').close()
     loggingFile = open('main.log', 'a', encoding='utf-8')
     logging.basicConfig(stream=loggingFile, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     logging.info("Program main.py started")
+
+    # check if another instance is running
+    pid_file = 'program.pid'
+    fp = open(pid_file, 'w')
+    try:
+        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except IOError:
+        print("Another instance is running")
+        logging.error("Another instance is running")
+        sys.exit(0)
 
     logFileName = "data/log.txt"
 

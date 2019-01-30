@@ -12,6 +12,7 @@ import time
 import sys, getopt
 from pprint import pprint
 import logging
+import fnmatch
 import re
 
 if os.name != 'nt':

@@ -247,7 +247,20 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
 
 def setup_config(api_key, configFile):
     logging.info("setup_config function called")
-    write("\n\n\nSetting up Config file")
+    write("\n\n\nSetting up Config file...", BLUE)
+
+    if os.path.isfile() is configFile:
+        loop = True
+        while loop:
+            response = get_input("Previous config file found would you like to overwrite it or edit it (o or e):")
+            if response is 'o' or response is 'O':
+                loop = False
+            if response is 'e' or response is 'E':
+                loop = False
+                #TODO Add edit functionality
+            else:
+                write("Please enter o for overwrite or e for edit.", RED)
+
     with open(configFile, 'w') as f:
         f.write("API_KEY=" + api_key + "\n")
         logging.debug("API Key recorded to file")

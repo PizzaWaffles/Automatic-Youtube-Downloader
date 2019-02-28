@@ -57,7 +57,7 @@ def install_dependencies():
         print("pythonPath:" + pythonPath)
         getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "get_poetry.py")]
         runPoetryCmd = [os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
-        if platform == 'windows':
+        if sys.platform.startswith("win"):
             print('Using Windows System Settings')
             subprocess.run(getPoetryCmd, shell=True)
             subprocess.run(runPoetryCmd, shell=True)

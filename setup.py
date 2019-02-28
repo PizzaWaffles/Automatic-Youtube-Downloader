@@ -8,6 +8,8 @@ import subprocess
 import xml.sax.saxutils
 import logging
 import getopt
+from colorama import init
+from colorama import Fore, Back, Style
 
 # support for python 3 and 2
 if sys.version_info[0] == 3:
@@ -32,6 +34,20 @@ VIDEO_QUALITY_LIST = [
     ['244+251/best', '247+251/best', '248+251/299+140/137+140/best', '271+251/best', '313+251/best', '272+251/best']
 ]
 
+init()  # start colorizer
+RED = Fore.RED
+GREEN = Fore.GREEN
+BLUE = Fore.BLUE
+MAGENTA = Fore.MAGENTA
+LIGHT_BLUE = Fore.LIGHTCYAN_EX
+
+
+def write(s, color=None):
+    if color is None:
+        print(s)
+    else:
+        print(color + s + Style.RESET_ALL)
+
 
 # this should be deprecated in favor of logging.* calls
 def logPrint(string):
@@ -43,7 +59,8 @@ def logPrint(string):
 def get_input(msg):  # support for python 2 and 3
     # Deprecated
     if sys.version_info[0] == 3:
-        d = input(msg)
+        write(msg, LIGHT_BLUE)
+        d = input("")
     else:
         d = raw_input(msg)
     return d
@@ -51,70 +68,36 @@ def get_input(msg):  # support for python 2 and 3
 
 def install_dependencies():
     try:
-        print("Checking Dependencies....")
+        write("Checking Dependencies....", BLUE)
         homeDirectory = os.getcwd()
         pythonPath = sys.executable
-        print("pythonPath:" + pythonPath)
+        write("Python Path: " + pythonPath)
         getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "get_poetry.py")]
         runPoetryCmd = [os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
         if sys.platform.startswith("win"):
-            print('Using Windows System Settings')
+            write('Using Windows System Settings')
             subprocess.run(getPoetryCmd, shell=True)
             subprocess.run(runPoetryCmd, shell=True)
         else:
             sys.stdout.flush()
             proc = subprocess.call(getPoetryCmd)
             if proc > 0:
-                print("An error occurred with downloading poetry")
+                write("An error occurred with downloading poetry", RED)
                 exit(1)
 
             sys.stdout.flush()
             proc = subprocess.call(runPoetryCmd)
             if proc > 0:
-                print("An error occurred with running poetry")
+                write("An error occurred with running poetry", RED)
                 exit(1)
 
     except Exception as e:
         logging.error("Exception occurred %s" % str(e))
-        logPrint("ERROR:\n" + str(e))
         logging.error(traceback.format_exc())
-        print(str(e))
-        print("An error occured please check logs and try again")
+        write(str(e))
+        write("An error occured please check logs and try again", RED)
         exit()
-    print("Complete.\n")
-    '''try:
-        from pip import main as pipmain
-    except:
-        from pip._internal import main as pipmain'''
-'''
-    _all_ = [
-        "beautifulsoup4",
-        "listparser",
-        "colorama",
-        "youtube-dl"
-    ]
-    linux = [
-        "ffmpeg"
-    ]
-    try:
-        if pipmain(['install', "--upgrade", "pip"]):
-            raise Exception
-        for package in _all_:
-            logging.debug("Looking for package %s" % package)
-            if pipmain(['install', package]):
-                raise Exception
-                # print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
-        # if platform == 'windows':
-        #	install(windows)
-        if platform.startswith('linux'):
-            for package in linux:
-                logging.debug("Looking for linux package %s" % package)
-                if pipmain(['install', package]):
-                    raise Exception
-                    # print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
-                    # if platform == 'darwin':  # MacOS
-                    #	install(darwin)
-'''
+    write("Complete.\n", GREEN)
 
 
 def format_youtube_data():
@@ -122,18 +105,18 @@ def format_youtube_data():
     setup_not_complete = True
     subFile = "subscription_manager.xml"
     while setup_not_complete:
-        print("\n\nSetting up Youtube configs")
-        print("Please goto https://www.youtube.com/subscription_manager")
-        print("On the bottom of the page click 'Export Subscriptions'")
-        print("Put that file in the data directory so it looks like " + subFile)
+        write("\n\nSetting up Youtube configs")
+        write("Please goto https://www.youtube.com/subscription_manager")
+        write("On the bottom of the page click 'Export Subscriptions'")
+        write("Put that file in the data directory so it looks like " + subFile)
         get_input("Click enter to continue.....")
 
         if os.path.exists(os.path.join("data" + subFile)):
-            print("\nFile Found\n\n")
+            write("\nFile Found\n\n")
             logging.info(subFile + " was found")
             setup_not_complete = False
         else:
-            print("File Not Found!! Please make sure you have it in th correct directory and its named correctly")
+            write("File Not Found!! Please make sure you have it in the correct directory and its named correctly", RED)
             logging.warning(subFile + " was NOT found")
             logging.debug("data folder contents:\n" + str(glob.glob("data/*")))
 
@@ -145,11 +128,11 @@ def get_API_key():
 
     logging.debug("Gathering API key info")
     while setup_not_complete:
-        print("\n\nPlease goto https://www.slickremix.com/docs/get-api-key-for-youtube/")
-        print("Follow this guide to setup an API key you can name the project whatever you want")
+        write("\n\nPlease goto https://www.slickremix.com/docs/get-api-key-for-youtube/")
+        write("Follow this guide to setup an API key you can name the project whatever you want")
         api_key = get_input("Please enter your API key now:")
 
-        print("Testing key.....")
+        write("Testing key.....", BLUE)
         try:
             url_data = urlopen(
                 'https://www.googleapis.com/youtube/v3/search?part=snippet&q=YouTube+Data+API&type=video&key=' + api_key)
@@ -157,16 +140,14 @@ def get_API_key():
             if code != 200:
                 raise Exception('Did not receive webpage')
 
-            print("\nSuccess!")
+            write("\nSuccess!", GREEN)
             logging.info("Google API Key returned 200 (success)")
             setup_not_complete = False
             return api_key
         except Exception as e:
             logging.error("ERROR" + str(e))
             logging.error(traceback.format_exc())
-            print("Sorry that key did not work!!! Make sure you copied the key correctly")
-
-    return api_key  # shouldn't reach this but just in case
+            write("Sorry that key did not work!!! Make sure you copied the key correctly", RED)
 
 
 def channel_selection(dataFile, inputFile="data/subscription_manager.xml", titleList=None, idList=None):
@@ -176,35 +157,34 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
     import listparser as lp
     logging.debug("Channel_selection started")
     # This function parses OPML data and allows the user to select which channels to be included
-    print("Parsing Youtube data\n")
+    write("Parsing Youtube data...\n", BLUE)
     all_channels = False
     loop = True
     while loop:
+        write("Would you like to select which channels you want to include, or do you want to include all of them?\n"
+              "If you include all channels you can remove them manually by editing " + dataFile + " and deleting the"
+              " entire line of the channel you do not want (Choose this option if you have a lot of subscriptions)\n")
         selection = get_input(
-            "Would you like to select which channels you want to include, or do you want to include all of them?\n"
-            "If you include all channels you can remove them manually by editing " + dataFile + " and deleting the"
-            " entire line of the channel you do not want (Choose this option if you have a lot of subscriptions)\n"
-            "Enter 'all' to keep all subscriptions or 'select' to select which channels (or 'a' or 's'):").lower()
+              "Enter 'all' to keep all subscriptions or 'select' to select which channels (or 'a' or 's'):").lower()
 
         logging.debug("User selected %s for all or single channel selection" % selection)
         if selection == 'all' or selection == 'a':
             all_channels = True
             loop = False
-            print("Including all channels\n")
+            write("Including all channels\n")
         elif selection == 'select' or selection == 's':
             all_channels = False
             loop = False
-            print(
-                "You will now be asked to select which channels you would like to include in your download library. \nAny"
-                " channels you do not include will be ignored. \nWarning: if you add a new subscription you must go through this"
-                " process again (until I add a feature to import a channel)\n")
+            write(
+                "You will now be asked to select which channels you would like to include in your download library. \n"
+                "Any channels you do not include will be ignored.\n")
         else:
-            print("Invalid Selection!!! Try again.")
+            write("Invalid Selection!!! Try again.")
             logging.warning("User selected invalid entry")
 
     logging.debug("Opening " + dataFile + " for writing")
     file = open(dataFile, 'w')
-    #logging.debug("Parsing " + inputFile)
+    # logging.debug("Parsing " + inputFile)
     file.write('<opml version="1.1">\n<body>\n')
 
     if titleList is None:
@@ -231,7 +211,7 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
         logging.debug("Channel has url %s" % url)
 
         if all_channels:
-            print("(%i/%i) Including subscription: %s\n" % (human_count, num_channels, title))
+            write("(%i/%i) Including subscription: %s\n" % (human_count, num_channels, title))
             logging.info("Automatically including channel: %s" % title)
 
         if not all_channels:
@@ -241,7 +221,7 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
                     "(%i/%i) Include %s, yes or no (y/n)?" % (human_count, num_channels, title)).lower()
                 if selection == 'y' or selection == 'yes':
                     include_this_subscription = True
-                    print("   Including %s\n" % title)
+                    write("   Including %s\n" % title)
                     logging.info("User opted to include channel: %s" % title)
                     loop = False
                 elif selection == 'n' or selection == 'no':
@@ -249,7 +229,7 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
                     logging.info("User opted to not include channel: %s" % title)
                     loop = False
                 else:
-                    print("   Invalid response. Try again.")
+                    write("   Invalid response. Try again.", RED)
 
         human_count += 1
 
@@ -257,17 +237,17 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
             file.write('<outline title="' + xml.sax.saxutils.escape(title) + '" xmlUrl="' + xml.sax.saxutils.escape(
                 url) + '"/>\n')
         else:
-            print("   Not including %s\n" % title)
+            write("   Not including %s\n" % title)
 
     file.write('</body>\n</opml>')
     file.close()
     logging.debug("Channels saved to" + dataFile)
-    print("\nComplete.")
+    write("\nComplete.")
 
 
 def setup_config(api_key, configFile):
     logging.info("setup_config function called")
-    print("\n\n\nSetting up Config file")
+    write("\n\n\nSetting up Config file")
     with open(configFile, 'w') as f:
         f.write("API_KEY=" + api_key + "\n")
         logging.debug("API Key recorded to file")
@@ -284,46 +264,50 @@ def setup_config(api_key, configFile):
                 delay_time = get_input("Please enter the delay time between checks (in minutes):")
                 if delay_time.isdigit():
                     logging.info("User set delay time between checks to %s" % delay_time)
-                    print("\nSuccess! It will run once and then every " + delay_time + " minutes")
+                    write("\nSuccess! It will run once and then every " + delay_time + " minutes")
                     f.write("SCHEDULING_MODE=DELAY\n")
                     f.write("SCHEDULING_MODE_VALUE=" + delay_time + '\n')
                     loop = False
                 else:
-                    print("\nInvalid entry! Value must be a whole number (e.g.: 1, 10, 6000)")
+                    write("\nInvalid entry! Value must be a whole number (e.g.: 1, 10, 6000)", RED)
             elif selection == '2':
                 start_time = get_input("Please enter the hour of the day to run at (0-23):")
                 if start_time.isdigit() and (-1 < int(start_time) < 24):
                     logging.info("User set run time of day to %s" % start_time)
-                    print("\nSuccess! It will run at " + start_time + " everyday!")
+                    write("\nSuccess! It will run at " + start_time + " everyday!", GREEN)
                     f.write("SCHEDULING_MODE=TIME_OF_DAY\n")
                     f.write("SCHEDULING_MODE_VALUE=" + start_time + '\n')
                     loop = False
                 else:
-                    print("\nInvalid entry! Value must be 0-23 (e.g.: 6, 14, 23)")
+                    write("\nInvalid entry! Value must be 0-23 (e.g.: 6, 14, 23)")
             elif selection == '3':
                 start_time = get_input("The program will only run once and then end, please confirm with Y")
                 if start_time.isalpha() and (start_time.lower() == "y"):
                     logging.info("User set to run only once and exit")
-                    print("\nSuccess! It will run once and exit!")
+                    write("\nSuccess! It will run once and exit!", GREEN)
                     f.write("SCHEDULING_MODE=RUN_ONCE\n")
                     f.write("SCHEDULING_MODE_VALUE="'\n')
                     loop = False
                 else:
-                    print("\nReturning to the parent selection")
+                    write("\nReturning to the parent selection")
                     loop = True
             else:
-                print("\nInvalid!!! Please choose from 1-3.")
+                write("\nInvalid!!! Please choose from 1-3.", RED)
                 logging.warning("User entered bad selection for how to run %s" % selection)
 
         loop = True
         while (loop):
-            response = get_input("\nHow many videos for each channel do you want to download? (max 15)")
+            write("\nHow many videos for each channel do you want to download initially? (max 15)\n"
+                  "Note that is a automatic video downloader meaning it will download new videos "
+                  "once they are posted. This is not meant to download am entire channel (at least I "
+                  "have not implemented this function if you would like it please request it on GitHub)\n")
+            response = get_input("Please enter a number between 1-15")
             if response.isdigit():
                 logging.info("User selected %s videos to be downloaded per channel" % response)
                 f.write("NUM_VIDEOS=" + response + '\n')
                 loop = False
             else:
-                print("\nInvalid!!! Please try again.")
+                write("\nInvalid!!! Please try again.", RED)
 
         loop = True
         while (loop):
@@ -335,25 +319,23 @@ def setup_config(api_key, configFile):
             try:
                 if not os.path.isdir(response):  # either not a valid directory or not created
                     # try making a directory and see if it throws an exception
-                    print("Creating Source Directory")
+                    write("Creating Source Directory")
                     response = os.path.join(response, '')  # add a trailing backslash if not already there
                     os.makedirs(response)
                     logging.info("Path to video library was not found, created")
                     f.write("DESTINATION_FOLDER=" + response + '\n')  # if it gets this far we are good
-                    print('\nSuccess!')
+                    write('\nSuccess!', GREEN)
                     loop = False
                 else:
-                    print("Found Source Directory")
+                    write("Found Source Directory")
                     logging.info("Video library path found")
                     response = os.path.join(response, '')
                     f.write("DESTINATION_FOLDER=" + response + '\n')
-                    print('\nSuccess!')
+                    write('\nSuccess!', GREEN)
                     loop = False
             except Exception as e:
                 logging.error(str(e))
-                print("\nInvalid!!! Please try again.")
-
-
+                write("\nInvalid!!! Please try again.", RED)
 
         '''
         Format for files and destination folders available options:
@@ -368,25 +350,25 @@ def setup_config(api_key, configFile):
             response = get_input("Please Choose a destination format:\n"
                                  "1. ASS Scanner Default (%Channel_Name [Youtube-$Channel_ID])\n"
                                  "2. Extended Personal Scanner Default (%Channel_Name)\n"
-                                 #"3. Custom"
+                # "3. Custom"
             )
 
             logging.info("User selected %s for destination format" % response)
 
             DESTINATION_FORMAT = ""
             if response is "1":
-                print()
+                write()
                 DESTINATION_FORMAT = "%NAME [Youtube-$CHANNEL_ID]"
                 loop = False
             elif response is "2":
-                print()
+                write()
                 DESTINATION_FORMAT = "%NAME"
                 loop = False
-            #elif response is "3":
-            #    print("HODLLLLLLLLLLLLLL")
+            # elif response is "3":
+            #    write("HODLLLLLLLLLLLLLL")
             #    loop = False
             else:
-                print("Invalid Entry")
+                write("Invalid Entry", RED)
 
             if loop is False:
                 f.write('DESTINATION_FORMAT=' + DESTINATION_FORMAT + '\n')
@@ -396,39 +378,39 @@ def setup_config(api_key, configFile):
             response = get_input("Please Choose a file format:\n"
                                  "1. ASS Scanner Default (%Video_Tile - [%Video_ID])\n"
                                  "2. Extended Personal Scanner Default (%Channel_Name - %Upload_Date - %Video_Title)\n"
-                                 #"3. Custom"
+                # "3. Custom"
             )
 
             logging.info("User selected %s for destination format" % response)
             FILE_FORMAT = ""
             if response is "1":
-                print()
+                write()
                 FILE_FORMAT = "%TITLE - [%VIDEO_ID]"
                 loop = False
             elif response is "2":
-                print()
+                write()
                 FILE_FORMAT = "%NAME - %UPLOAD_DATE - %TITLE"
                 loop = False
-            #elif response is "3":
-            #    print("HODDLLLL")
+            # elif response is "3":
+            #    write("HODDLLLL")
             #    loop = False
             else:
-                print("Invalid Entry")
+                write("Invalid Entry", RED)
             if loop is False:
                 f.write('FILE_FORMAT=' + FILE_FORMAT + '\n')
 
         loop = True
         while (loop):
-            print("Please choose a quality setting:\n")
+            write("Please choose a quality setting:\n", BLUE)
             for i, line in enumerate(VIDEO_QUALITY_LIST[0]):
-                print('{}. {}'.format(i + 1, line.strip()))
+                write('{}. {}'.format(i + 1, line.strip()))
             response = get_input("")
             try:
                 if 0 < int(response) < len(VIDEO_QUALITY_LIST[0]):
                     f.write("VIDEO_FORMAT=" + VIDEO_QUALITY_LIST[1][int(response)] + "\n")
                 loop = False
             except:
-                print("Please choose a number between 1-" + str(len(VIDEO_QUALITY_LIST[0])) + "\n")
+                write("Please choose a number between 1-" + str(len(VIDEO_QUALITY_LIST[0])) + "\n", BLUE)
 
 
 def add_channel(dataFile):
@@ -438,7 +420,7 @@ def add_channel(dataFile):
 
     if ("UC" in chID) or (len(chID) is 24):
 
-        print("Writing to file...")
+        write("Writing to file...", BLUE)
 
         if os.path.isfile(dataFile):
             file = open(dataFile, 'r')
@@ -451,27 +433,30 @@ def add_channel(dataFile):
                             xml.sax.saxutils.escape(chID) + '"/>\n')
             file.writelines(lines)
             file.close()
-            print("Complete.")
+            write("Complete.", GREEN)
         else:
             file = open(dataFile, 'w')
             file.write('<opml version="1.1">\n<body>\n')
             file.write('<outline title="' + xml.sax.saxutils.escape(chName) +
                        '" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=' +
-                        xml.sax.saxutils.escape(chID) + '"/>\n')
+                       xml.sax.saxutils.escape(chID) + '"/>\n')
             file.write('</body>\n</opml>')
             file.close()
     else:
-        print("Invalid ID! Try again please")
+        write("Invalid ID! Try again please", RED)
 
 
 def get_sub_list(api_key):
-    my_chid = get_input("Please login to your youtube account in a browser, click on your account and click 'My Channel'\n"
-                      "Look at the address bar, copy everything after channel/, it should start with UC\n"
-                      "Please paste that in here(If you do not have a Youtube account just click enter): ")
+    my_chid = get_input(
+        "Please login to your youtube account in a browser, click on your account and click 'My Channel'\n"
+        "Look at the address bar, copy everything after channel/, it should start with UC\n"
+        "Please paste that in here(If you do not have a Youtube account just click enter): ")
 
     try:
         if my_chid.strip() is "":
-            print("Please put ")
+            #TODO Add functionallity for no youtube channel
+            write("Please put ")
+
         my_chid = my_chid.split("?")[0]
         url_data = urlopen(
             'https://www.googleapis.com/youtube/v3/subscriptions?channelId='
@@ -488,8 +473,8 @@ def get_sub_list(api_key):
             titleList.append(item['snippet']['title'])
             idList.append(item['snippet']['resourceId']['channelId'])
 
-        #results_per_page = data['pageInfo']['resultsPerPage']
-        #total_results = data['pageInfo']['totalResults']
+        # results_per_page = data['pageInfo']['resultsPerPage']
+        # total_results = data['pageInfo']['totalResults']
         while True:
             if "nextPageToken" in data:
                 # There is more pages we need to get
@@ -514,7 +499,7 @@ def get_sub_list(api_key):
         logging.error("ERROR: My Channel Key incorrect")
         logging.error("ERROR" + str(e))
         logging.error(traceback.format_exc())
-        print("There was something wrong with your key, please check the setup.log")
+        write("There was something wrong with your key, please check the setup.log", RED)
         exit(0)
 
 
@@ -531,7 +516,7 @@ def main(configFile, dataFile, skipDep):
 
     loop = True
     while loop:
-        print("""
+        write("""
         1. First Time Install
         2. Channel Selection
         3. Install Dependencies
@@ -549,7 +534,7 @@ def main(configFile, dataFile, skipDep):
             titleList, idList = get_sub_list(api_key)
             channel_selection(dataFile, "", titleList, idList)
             setup_config(api_key, configFile)
-            print('\n\n\n----------This completes the setup you may now exit-----------\n')
+            write('\n\n\n----------This completes the setup you may now exit-----------\n', GREEN)
         elif menuSelection == "2":
             channel_selection(dataFile)
         elif menuSelection == "3":
@@ -557,12 +542,12 @@ def main(configFile, dataFile, skipDep):
         elif menuSelection == "4":
             add_channel(dataFile)
         elif menuSelection == "5":
-            print("\n Goodbye")
+            write("\n Goodbye")
             logging.info("User exited program")
 
             exit()
         else:
-            print("\n Not Valid Choice Try again")
+            write("\n Not Valid Choice Try again")
             logging.info("Main menu selection of %s rejected, looping" % menuSelection)
 
 
@@ -579,7 +564,7 @@ if __name__ == "__main__":
         try:
             opts, args = getopt.getopt(sys.argv[1:], "hc:d:s", ["config=", "data=", "skip"])
         except getopt.GetoptError:
-            print('\n\nmain.py -c <config file> -d <youtube data file> -s\n\n'
+            write('\n\nmain.py -c <config file> -d <youtube data file> -s\n\n'
                   '   -c,--config: config file optional, if not provided will default to data/config\n'
                   '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
                   '       main.py -c "config1.txt config2 data/config3"\n'
@@ -589,7 +574,7 @@ if __name__ == "__main__":
             exit(2)
         for opt, arg in opts:
             if opt == '-h':
-                print('\n\nmain.py -c <config file> -d <youtube data file> -s\n\n'
+                write('\n\nmain.py -c <config file> -d <youtube data file> -s\n\n'
                       '   -c,--config: config file optional, if not provided will default to data/config\n'
                       '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
                       '       main.py -c "config1.txt config2 data/config3"\n'
@@ -603,11 +588,11 @@ if __name__ == "__main__":
                 dataFileInput = arg
             elif opt in ("-s", "--skip"):
                 skipDep = True
-                print("--Skipping Dependency check")
+                write("--Skipping Dependency check")
 
         if configFileInput == '':
             configFile = 'data/config'
-            #print('--Using data/config')
+            # write('--Using data/config')
         else:
             configFile = configFileInput
 
@@ -622,12 +607,12 @@ if __name__ == "__main__":
 
     if dataFileInput == '':
         dataFileInput = 'data/youtubeData.xml'
-        #print('--Using data/youtubeData.xml')
+        # write('--Using data/youtubeData.xml')
     else:
         dataFile = dataFileInput
 
-    print("--Outputting data to:" + dataFile)
-    print("--Config file:" + configFile)
+    write("--Outputting data to:" + dataFile)
+    write("--Config file:" + configFile)
     main(configFile, dataFile, skipDep)
     logging.info("Program setup.py ended")
     logging.info("====================================================================")

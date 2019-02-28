@@ -2,10 +2,7 @@ import sys
 import json
 import os
 import glob
-import pip
 import traceback
-import pkg_resources
-from pkg_resources import DistributionNotFound, VersionConflict
 from sys import platform
 import subprocess
 import xml.sax.saxutils
@@ -22,6 +19,18 @@ else:
 
 DEBUGLOGGING = False
 
+VIDEO_QUALITY_DICT = {
+    '480p': '244+251/best',
+    '720p': '247+251/best',
+    '1080p HD': '248+251/299+140/137+140/best',
+    '1440p QHD': '271+251/best',
+    '2160p 4k': '313+251/best',
+    '4320p 8k': '272+251/best'
+}
+VIDEO_QUALITY_LIST = [
+    ['480p', '720p', '1080p HD', '1440p QHD', '2160p 4k', '4320p 8k'],
+    ['244+251/best', '247+251/best', '248+251/299+140/137+140/best', '271+251/best', '313+251/best', '272+251/best']
+]
 
 
 # this should be deprecated in favor of logging.* calls
@@ -41,14 +50,36 @@ def get_input(msg):  # support for python 2 and 3
 
 def install_dependencies():
     try:
+        print("Checking Dependencies....")
+        homeDirectory = os.getcwd()
+        if platform == 'windows':
+            #print('Windows System')
+            subprocess.run(["python", os.path.join("poetry", "get_poetry.py")], shell=True)
+            subprocess.run([os.path.join("poetry", "bin", "poetry"), "update"], shell=True)
+        else:
+            #print('Not Windows Sys')
+            sys.stdout.flush()
+            os.system('python ' + os.path.join(homeDirectory, "poetry", 'get_poetry.py'))
+            sys.stdout.flush()
+            os.system(os.path.join(homeDirectory, "poetry", "bin", "poetry") + ' update')
+
+    except Exception as e:
+        logging.error("Exception occurred %s" % str(e))
+        logPrint("ERROR:\n" + str(e))
+        logging.error(traceback.format_exc())
+        print(str(e))
+        print("An error occured please check logs and try again")
+        exit()
+    print("Complete.\n")
+    '''try:
         from pip import main as pipmain
     except:
-        from pip._internal import main as pipmain
-
-    print("Checking Dependencies....")
+        from pip._internal import main as pipmain'''
+'''
     _all_ = [
         "beautifulsoup4",
         "listparser",
+        "colorama",
         "youtube-dl"
     ]
     linux = [
@@ -72,34 +103,32 @@ def install_dependencies():
                     # print(subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]))
                     # if platform == 'darwin':  # MacOS
                     #	install(darwin)
-    except Exception as e:
-        logging.error("Exception occurred %s" % str(e))
-        logPrint("ERROR:\n" + str(e))
-        logging.error(traceback.format_exc())
-        print("One or more dependencies not met!! Please run 'pip install -r requirements.txt'")
-        exit()
-    print("Complete.")
+'''
 
 
-def setup_youtube(dataFile):
-    logging.debug("setup_youtube function called")
+def format_youtube_data():
     api_key = ""
     setup_not_complete = True
+    subFile = "subscription_manager.xml"
     while setup_not_complete:
         print("\n\nSetting up Youtube configs")
         print("Please goto https://www.youtube.com/subscription_manager")
         print("On the bottom of the page click 'Export Subscriptions'")
-        print("Put that file in the data directory so it looks like " + dataFile)
+        print("Put that file in the data directory so it looks like " + subFile)
         get_input("Click enter to continue.....")
 
-        if os.path.exists(dataFile):
+        if os.path.exists(os.path.join("data" + subFile)):
             print("\nFile Found\n\n")
-            logging.info(dataFile + " was found")
+            logging.info(subFile + " was found")
             setup_not_complete = False
         else:
             print("File Not Found!! Please make sure you have it in th correct directory and its named correctly")
-            logging.warning(dataFile + " was NOT found")
+            logging.warning(subFile + " was NOT found")
             logging.debug("data folder contents:\n" + str(glob.glob("data/*")))
+
+
+def get_API_key():
+    logging.debug("get_API_key function called")
 
     setup_not_complete = True
 
@@ -129,7 +158,10 @@ def setup_youtube(dataFile):
     return api_key  # shouldn't reach this but just in case
 
 
-def channel_selection(dataFile, inputFile="data/subscription_manager.xml"):
+def channel_selection(dataFile, inputFile="data/subscription_manager.xml", titleList=None, idList=None):
+    if titleList is not None:
+        inputFile = None
+
     import listparser as lp
     logging.debug("Channel_selection started")
     # This function parses OPML data and allows the user to select which channels to be included
@@ -161,19 +193,28 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml"):
 
     logging.debug("Opening " + dataFile + " for writing")
     file = open(dataFile, 'w')
-    logging.debug("Parsing " + inputFile)
-    d = lp.parse(inputFile)
-    l = d.feeds
+    #logging.debug("Parsing " + inputFile)
     file.write('<opml version="1.1">\n<body>\n')
-    num_channels = len(l)
-    human_count = 1
 
+    if titleList is None:
+        d = lp.parse(inputFile)
+        l = d.feeds
+
+        for count, channel in enumerate(l):
+            titleList[count] = channel.title
+            idList[count] = channel.url
+    else:
+        for count, channel in enumerate(idList):
+            idList[count] = "https://www.youtube.com/feeds/videos.xml?channel_id=" + idList[count]
+    num_channels = len(titleList)
+
+    human_count = 1
     logging.debug("Processing channels")
-    for channel in l:
+    for count in range(0, num_channels):
         include_this_subscription = True
-        title = channel.title.replace('&', 'and')
-        title = channel.title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
-        url = bytes(channel.url, 'utf-8').decode('utf-8', 'ignore')
+        title = titleList[count].replace('&', 'and')
+        title = title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
+        url = bytes(idList[count], 'utf-8').decode('utf-8', 'ignore')
 
         logging.debug("Processing channel: %s" % title)
         logging.debug("Channel has url %s" % url)
@@ -276,7 +317,7 @@ def setup_config(api_key, configFile):
         loop = True
         while (loop):
             response = get_input("\nWhere would you like your videos moved? (Usually a Plex library)\n"
-                                 "Make sure you enter the entire address (ex. 'G:\\Plex\\Youtube\\\n')")
+                                 "Make sure you enter the entire address (ex. 'G:\\Plex\\Youtube\\')\n")
 
             logging.info("User selected path to place videos as %s" % response)
 
@@ -365,6 +406,19 @@ def setup_config(api_key, configFile):
             if loop is False:
                 f.write('FILE_FORMAT=' + FILE_FORMAT + '\n')
 
+        loop = True
+        while (loop):
+            print("Please choose a quality setting:\n")
+            for i, line in enumerate(VIDEO_QUALITY_LIST[0]):
+                print('{}. {}'.format(i + 1, line.strip()))
+            response = get_input("")
+            try:
+                if 0 < int(response) < len(VIDEO_QUALITY_LIST[0]):
+                    f.write("VIDEO_FORMAT=" + VIDEO_QUALITY_LIST[1][int(response)] + "\n")
+                loop = False
+            except:
+                print("Please choose a number between 1-" + str(len(VIDEO_QUALITY_LIST[0])) + "\n")
+
 
 def add_channel(dataFile):
     chName = get_input("\n\nPlease enter the channel Name:")
@@ -399,6 +453,60 @@ def add_channel(dataFile):
         print("Invalid ID! Try again please")
 
 
+def get_sub_list(api_key):
+    my_chid = get_input("Please login to your youtube account in a browser, click on your account and click 'My Channel'\n"
+                      "Look at the address bar, copy everything after channel/, it should start with UC\n"
+                      "Please paste that in here(If you do not have a Youtube account just click enter): ")
+
+    try:
+        if my_chid.strip() is "":
+            print("Please put ")
+        my_chid = my_chid.split("?")[0]
+        url_data = urlopen(
+            'https://www.googleapis.com/youtube/v3/subscriptions?channelId='
+            + my_chid + '&part=snippet%2CcontentDetails&maxResults=50&key=' + api_key +
+            '')
+
+        data = url_data.read()
+        data = json.loads(data.decode('utf-8'))
+
+        titleList = []
+        idList = []
+
+        for item in data['items']:
+            titleList.append(item['snippet']['title'])
+            idList.append(item['snippet']['resourceId']['channelId'])
+
+        #results_per_page = data['pageInfo']['resultsPerPage']
+        #total_results = data['pageInfo']['totalResults']
+        while True:
+            if "nextPageToken" in data:
+                # There is more pages we need to get
+                next_page_token = data['nextPageToken']
+
+                url_data = urlopen(
+                    'https://www.googleapis.com/youtube/v3/subscriptions?channelId=' + my_chid +
+                    '&part=snippet%2CcontentDetails&maxResults=50&pageToken=' + next_page_token + '&key=' + api_key +
+                    '&order=alphabetical')
+
+                data = url_data.read()
+                data = json.loads(data.decode('utf-8'))
+
+                for item in data['items']:
+                    titleList.append(item['snippet']['title'])
+                    idList.append(item['snippet']['resourceId']['channelId'])
+
+            else:
+                return [titleList, idList]
+
+    except Exception as e:
+        logging.error("ERROR: My Channel Key incorrect")
+        logging.error("ERROR" + str(e))
+        logging.error(traceback.format_exc())
+        print("There was something wrong with your key, please check the setup.log")
+        exit(0)
+
+
 def main(configFile, dataFile, skipDep):
     if not os.path.exists('data/'):
         logging.info("Data directory not found, creating...")
@@ -426,8 +534,9 @@ def main(configFile, dataFile, skipDep):
             logging.info("At main menu, user selected option %s" % menuSelection)
             if not skipDep:
                 install_dependencies()
-            api_key = setup_youtube("data/subscription_manager.xml")
-            channel_selection(dataFile)
+            api_key = get_API_key()
+            titleList, idList = get_sub_list(api_key)
+            channel_selection(dataFile, "", titleList, idList)
             setup_config(api_key, configFile)
             print('\n\n\n----------This completes the setup you may now exit-----------\n')
         elif menuSelection == "2":

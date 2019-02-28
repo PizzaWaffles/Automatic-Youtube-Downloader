@@ -6,18 +6,20 @@ import string
 import glob
 import traceback
 import json
-#from distutils.dir_util import copy_tree
+# from distutils.dir_util import copy_tree
 from datetime import datetime
 import time
 import sys, getopt
 from pprint import pprint
 import logging
-import fnmatch
 import re
+import fnmatch
+import subprocess
+from colorama import init
+from colorama import Fore, Back, Style
+from tendo import singleton
+from sys import platform
 
-if os.name != 'nt':
-    import fnctl
-    
 # Support for both python 2 and 3
 if sys.version_info[0] == 3:
     from urllib.request import urlopen
@@ -26,16 +28,19 @@ else:
     from urllib import urlopen
     import urllib as request
 
+# Start Colorizer
+init()
+
 # GLOBAL VARS
 NUM_VIDEOS = 0
 DESTINATION_FOLDER = ""
 API_KEY = ""
-FORMAT = "248+251/299+140/137+140/best"         # default if not specified in config
+FORMAT = "248+251/299+140/137+140/best"  # default if not specified in config
 FILE_FORMAT = "%NAME - %UPLOAD_DATE - %TITLE"
 DESTINATION_FORMAT = "%NAME"
 SCHEDULING_MODE = ""
 SCHEDULING_MODE_VALUE = ""
-YOUTUBE_XML_FILE= "data/youtubeData.xml"
+YOUTUBE_XML_FILE = "data/youtubeData.xml"
 
 # Constant
 FILTER_FOLDER = "data/filters/"
@@ -108,6 +113,43 @@ def load_configs(configFile):
         exit(0)
 
 
+def check_channelID(channelID):
+    tempData = ""
+    if ("UC" in channelID) and (len(channelID) is 24):
+        try:
+            url_data = urlopen('https://www.youtube.com/feeds/videos.xml?channel_id=' + channelID, )
+            url_data = url_data.read()
+            xml = bs(url_data.decode('utf-8'), 'html.parser')
+            tempData = xml.find('name').get_text(strip=True)
+            print()
+        except Exception as e:
+            print("Failed to Download Channel list due to html error, check logs")
+            videoList = ""
+            return 0
+    else:
+        return 0
+    return tempData
+
+
+def check_dependencies():
+    print("Checking Dependencies...")
+    try:
+        homeDirectory = os.getcwd()
+        if platform == 'windows':
+            # print('Windows System')
+            subprocess.run(["python", os.path.join("poetry", "get_poetry.py")], shell=True)
+            subprocess.run([os.path.join("poetry", "bin", "poetry"), "update"], shell=True)
+        else:
+            # print('Not Windows Sys')
+            sys.stdout.flush()
+            os.system('python ' + os.path.join(homeDirectory, "poetry", 'get_poetry.py'))
+            os.system(os.path.join(homeDirectory, "poetry", "bin", "poetry") + ' update')
+    except:
+        print(str(e))
+        print("Error updating dependencies")
+        exit(10)
+
+
 def logVariables():
     dicGlobal = globals()
     dicLocal = locals()
@@ -128,7 +170,7 @@ def get_icons(channel, chid, overwrite=False):
     for d in range(0, len(temp)):
         downloaded[d] = temp[d].strip()
 
-    #print("Downloading Icons....")
+    # print("Downloading Icons....")
     if len(channel) == 0:
         print("Error youtubeData.xml file empty please run setup.py to fix")
 
@@ -157,11 +199,11 @@ def get_icons(channel, chid, overwrite=False):
                         f.write(chid[j] + '\n')
 
                 except Exception as e:
-                    print("An error occurred")
+                    print(Fore.RED + "An error occurred" + Style.RESET_ALL)
                     logging.error(str(e))
                     logging.error(traceback.format_exc())
                     logVariables()
-    #print('Complete.')
+                    # print('Complete.')
 
 
 def safecopy(src, dst):
@@ -218,7 +260,7 @@ class filters:
                 self.filtersListArg.append(temp[1].lower())
                 self.channelID.append(files[i])
 
-                #print(self.channelID)
+                # print(self.channelID)
 
     def download_check(self, title, chID):
         title = title.lower()
@@ -283,7 +325,7 @@ class scheduling:
             if self.did_i_just_complete_run:
                 logging.info("  Just completed run, ending")
                 sys.exit(0)
-                #break
+                # break
             else:
                 logging.info("  Starting run once")
 
@@ -299,14 +341,14 @@ class scheduling:
             logging.info("Unknown SCHEDULING_MODE found %s" % SCHEDULING_MODE)
             raise Exception("Unknown SCHEDULING_MODE found %s" % SCHEDULING_MODE)
             exit(2)
-            #break
+            # break
 
         logging.info("Sleeping for %s minutes..." % self.minutes_to_wait)
         time.sleep(self.minutes_to_wait * 60)
 
         self.number_of_runs_completed += 1
         self.did_i_just_complete_run = True
-        #Now run main
+        # Now run main
 
 
 def main():
@@ -341,14 +383,14 @@ def main():
     for i in range(0, len(xmltitle)):  # for every channel
         skip_download = False
         uploader = xmltitle[i]
-        #print(uploader)
+        # print(uploader)
         try:
             url_data = urlopen(xmlurl[i], )
             url_data = url_data.read()
             xml = bs(url_data.decode('utf-8'), 'html.parser')
             videoList = xml.find_all('entry')
         except Exception as e:
-            print("Failed to Download Channel list due to html error, check logs")
+            print(Fore.RED + "Failed to Download Channel list due to html error, check logs" + Style.RESET_ALL)
             videoList = ""
             skip_download = True
             logging.error(str(e))
@@ -364,11 +406,11 @@ def main():
                 video_download_count += 1
 
                 title = str(v.title.string)
-                #title = title.decode("utf-8")
-                #temp = title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
+                # title = title.decode("utf-8")
+                # temp = title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
                 title = title.encode("utf-8", errors="ignore").decode('utf-8', 'ignore')
                 escapes = '|'.join([chr(char) for char in range(1, 32)])
-                title = re.sub(escapes, "", title)          # removes all escape characters
+                title = re.sub(escapes, "", title)  # removes all escape characters
                 title = title.replace("-", " ").replace("\\", "").replace("/", "").replace("%", "")
 
                 upload_time = v.published.string.split('T')[1].split('+')[0].replace(':', '')[:-2]
@@ -383,10 +425,10 @@ def main():
                 logFile.close()
                 if id in logFileContents:
                     logging.info("Video Already downloaded for id %s" % id)
-                    #print("Video Already downloaded: " + id)
+                    # print("Video Already downloaded: " + id)
                 else:
                     if not my_filters.download_check(title, channelID):
-                        #print("Video Filtered: " + title)
+                        # print("Video Filtered: " + title)
                         logging.info("Video Filtered: Title:" + title + "ChannelID:" + channelID)
                         skip_download = True
                         skip_move = True
@@ -401,8 +443,8 @@ def main():
                         if os.name == 'nt':  # if windows use supplied ffmpeg
                             ydl_opts = {
                                 'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',
-                            # need to put channelid in here because what youtube-dl gives may be incorrect
-                                #'simulate': 'true',
+                                # need to put channelid in here because what youtube-dl gives may be incorrect
+                                # 'simulate': 'true',
                                 'writethumbnail': 'true',
                                 'forcetitle': 'true',
                                 'ffmpeg_location': './ffmpeg/bin/',
@@ -432,19 +474,21 @@ def main():
                                 if not is_live:
                                     ydl.download([url])
                                 else:
-                                    print("Warning! This video is streaming live, it will be skipped")
+                                    print(
+                                        Fore.RED + "Warning! This video is streaming live, it will be skipped" + Style.RESET_ALL)
                                     logging.info("Warning! This video is streaming live, it will be skipped")
                                     skip_move = True
-                                    
+
                             if os.path.exists('Download/' + uploader + '/'):
                                 for file in os.listdir('Download/' + uploader + '/'):
                                     if fnmatch.fnmatch(file, "*" + video_title + "*.part"):
                                         skip_move = True
-                                        print("Failed to Download. Will Retry on next Run.")
+                                        print(
+                                            Fore.RED + "Failed to Download. Will Retry on next Run." + Style.RESET_ALL)
                                         logging.error("Found .part file. Failed to Download. Will Retry next Run.")
 
                         except Exception as e:
-                            print("Failed to Download")
+                            print(Fore.RED + "Failed to Download" + Style.RESET_ALL)
                             skip_move = True
                             logging.error(str(e))
                             logging.error(traceback.format_exc())
@@ -456,14 +500,16 @@ def main():
                         logging.debug("subscription_source_dir is %s" % subscription_source_dir)
                         logging.debug("subscription_destination_dir is %s" % subscription_destination_dir)
 
-                        #destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
-                        #destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
+                        # destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
+                        # destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
 
                         if not os.path.exists(DESTINATION_FOLDER + uploader):
-                            logging.info("Creating uploader destination directory for %s" % subscription_destination_dir)
+                            logging.info(
+                                "Creating uploader destination directory for %s" % subscription_destination_dir)
                             os.makedirs(subscription_destination_dir)
                         try:
-                            logging.info("Now moving content from %s to %s" % (subscription_source_dir, subscription_destination_dir))
+                            logging.info("Now moving content from %s to %s" % (
+                            subscription_source_dir, subscription_destination_dir))
 
                             for filename in os.listdir(subscription_source_dir):
                                 logging.info("Checking file %s" % filename)
@@ -471,7 +517,7 @@ def main():
                                 where_to_place = subscription_destination_dir
                                 logging.info("Moving file %s to %s" % (source_to_get, where_to_place))
                                 safecopy(source_to_get, where_to_place)
-                                #shutil.move(os.path.join(subscription_source_dir, filename), subscription_destination_dir)
+                                # shutil.move(os.path.join(subscription_source_dir, filename), subscription_destination_dir)
 
                             shutil.rmtree(subscription_source_dir, ignore_errors=True)
                             # shutil.move(videoName, destination + destVideoName)
@@ -481,7 +527,7 @@ def main():
                             logFile.write(id + ' \n')
                             logFile.close()
                         except Exception as e:
-                            print("An error occured moving file")
+                            print(Fore.RED + "An error occured moving file" + Style.RESET_ALL)
                             logging.error(str(e))
                             logging.error(traceback.format_exc())
                             logVariables()
@@ -495,27 +541,24 @@ def main():
 
 
 if __name__ == "__main__":
+    try:
+        check_dependencies()
+    except Exception as e:
+        print("Error, checking dependencies please run setup.py and install dependencies")
     # change working directory to the location of main.py
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
     os.chdir(dname)
-    
+
     if not os.path.isfile('main.log'):
         open('main.log', 'a').close()
     loggingFile = open('main.log', 'a', encoding='utf-8')
-    logging.basicConfig(stream=loggingFile, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+    logging.basicConfig(stream=loggingFile, level=logging.DEBUG, format='%(asctime)s %(message)s',
+        datefmt='%m/%d/%Y %I:%M:%S %p')
     logging.info("Program main.py started")
 
     # check if another instance is running
-    if os.name != 'nt':
-        pid_file = 'program.pid'
-        fp = open(pid_file, 'w')
-        try:
-            fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except IOError:
-            print("Another instance is running")
-            logging.error("Another instance is running")
-            sys.exit(0)
+    me = singleton.SingleInstance()  # will sys.exit(-1) if other instance is running
 
     logFileName = "data/log.txt"
 
@@ -533,21 +576,21 @@ if __name__ == "__main__":
         opts, args = getopt.getopt(sys.argv[1:], "hc", ["config="])
     except getopt.GetoptError:
         print('main.py -c <config file(optional)>\n'
-            '   -c: config file optional, if not provided will default to data/config\n'
-            '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
-            '       main.py -c "config1.txt config2 data/config3"\n')
+              '   -c: config file optional, if not provided will default to data/config\n'
+              '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
+              '       main.py -c "config1.txt config2 data/config3"\n')
         exit(2)
     for opt, arg in opts:
         if opt == '-h':
             print('main.py -c <config file(optional)>\n'
-            '   -c: config file optional, if not provided will default to data/config\n'
-            '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
-            '       main.py -c "config1.txt config2 data/config3"\n')
+                  '   -c: config file optional, if not provided will default to data/config\n'
+                  '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
+                  '       main.py -c "config1.txt config2 data/config3"\n')
             exit()
         elif opt in ("-c", "--config"):
             configFileInput = arg
 
-    #configFile = [None] * len(opts)
+    # configFile = [None] * len(opts)
     if configFileInput == '':
         configFile = 'data/config'
         print('--Using data/config')
@@ -561,16 +604,16 @@ if __name__ == "__main__":
                 print('Error config file not found at: ' + os.path.join(os.getcwd(), f))
                 exit(2)
 
-    sch = scheduling()      # init class
+    sch = scheduling()  # init class
     sch.increase_run()
     while True:
         if type(configFile) is list:
-            for l in configFile:    # for every config file run main
-                #print("Running config:'" + l + "'")
+            for l in configFile:  # for every config file run main
+                # print("Running config:'" + l + "'")
                 load_configs(l)
                 main()
         else:
-            #print("Running config:'" + configFile + "'")
+            # print("Running config:'" + configFile + "'")
             load_configs(configFile)
             main()
         sch.run()

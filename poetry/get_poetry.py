@@ -189,9 +189,10 @@ POETRY_BIN = os.path.join(POETRY_HOME, "bin")
 POETRY_ENV = os.path.join(POETRY_HOME, "env")
 POETRY_LIB = os.path.join(POETRY_HOME, "lib")
 POETRY_LIB_BACKUP = os.path.join(POETRY_HOME, "lib-backup")
+PYTHON_PATH = sys.executable
 
 
-BIN = """#!/usr/bin/env python
+BIN = "#!" + PYTHON_PATH + """
 import glob
 import sys
 import os

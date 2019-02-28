@@ -53,7 +53,9 @@ def install_dependencies():
     try:
         print("Checking Dependencies....")
         homeDirectory = os.getcwd()
-        getPoetryCmd = ["python", os.path.join(homeDirectory, "poetry", "get_poetry.py")]
+        pythonPath = sys.executable
+        print("pythonPath:" + pythonPath)
+        getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "get_poetry.py")]
         runPoetryCmd = [os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
         if platform == 'windows':
             print('Using Windows System Settings')
@@ -61,18 +63,16 @@ def install_dependencies():
             subprocess.run(runPoetryCmd, shell=True)
         else:
             sys.stdout.flush()
-            proc = subprocess.call(getPoetryCmd, shell=True)
+            proc = subprocess.call(getPoetryCmd)
             if proc > 0:
                 print("An error occurred with downloading poetry")
                 exit(1)
 
             sys.stdout.flush()
-            proc = subprocess.call(runPoetryCmd, shell=True)
+            proc = subprocess.call(runPoetryCmd)
             if proc > 0:
                 print("An error occurred with running poetry")
                 exit(1)
-
-            exit(0)
 
     except Exception as e:
         logging.error("Exception occurred %s" % str(e))

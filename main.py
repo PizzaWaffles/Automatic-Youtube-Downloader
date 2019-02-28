@@ -132,22 +132,29 @@ def check_channelID(channelID):
 
 
 def check_dependencies():
-    print("Checking Dependencies...")
     try:
+        print("Checking Dependencies....")
         homeDirectory = os.getcwd()
+        getPoetryCmd = ["python", os.path.join(homeDirectory, "poetry", "get_poetry.py")]
+        runPoetryCmd = [os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
         if platform == 'windows':
-            # print('Windows System')
-            subprocess.run(["python", os.path.join("poetry", "get_poetry.py")], shell=True)
-            subprocess.run([os.path.join("poetry", "bin", "poetry"), "update"], shell=True)
+            print('Using Windows System Settings')
+            subprocess.run(getPoetryCmd, shell=True)
+            subprocess.run(runPoetryCmd, shell=True)
         else:
-            # print('Not Windows Sys')
             sys.stdout.flush()
-            os.system('python ' + os.path.join(homeDirectory, "poetry", 'get_poetry.py'))
-            os.system(os.path.join(homeDirectory, "poetry", "bin", "poetry") + ' update')
-    except:
-        print(str(e))
-        print("Error updating dependencies")
-        exit(10)
+            proc = subprocess.call(getPoetryCmd, shell=True)
+            if proc > 0:
+                print("An error occurred with downloading poetry")
+                exit(1)
+
+            sys.stdout.flush()
+            proc = subprocess.call(runPoetryCmd, shell=True)
+            if proc > 0:
+                print("An error occurred with running poetry")
+                exit(1)
+
+            exit(0)
 
 
 def logVariables():

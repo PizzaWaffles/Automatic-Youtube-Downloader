@@ -14,8 +14,8 @@ if sys.version_info[0] == 3:
     from urllib.request import urlopen
     from urllib import request
 else:
-    from urllib import urlopen
-    import urllib as request
+    print("\nError, please install python3.\n")
+    exit(1)
 
 DEBUGLOGGING = False
 
@@ -41,6 +41,7 @@ def logPrint(string):
 
 
 def get_input(msg):  # support for python 2 and 3
+    # Deprecated
     if sys.version_info[0] == 3:
         d = input(msg)
     else:
@@ -52,16 +53,26 @@ def install_dependencies():
     try:
         print("Checking Dependencies....")
         homeDirectory = os.getcwd()
+        getPoetryCmd = ["python", os.path.join(homeDirectory, "poetry", "get_poetry.py")]
+        runPoetryCmd = [os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
         if platform == 'windows':
-            #print('Windows System')
-            subprocess.run(["python", os.path.join("poetry", "get_poetry.py")], shell=True)
-            subprocess.run([os.path.join("poetry", "bin", "poetry"), "update"], shell=True)
+            print('Using Windows System Settings')
+            subprocess.run(getPoetryCmd, shell=True)
+            subprocess.run(runPoetryCmd, shell=True)
         else:
-            #print('Not Windows Sys')
             sys.stdout.flush()
-            os.system('python ' + os.path.join(homeDirectory, "poetry", 'get_poetry.py'))
+            proc = subprocess.call(getPoetryCmd, shell=True)
+            if proc > 0:
+                print("An error occurred with downloading poetry")
+                exit(1)
+
             sys.stdout.flush()
-            os.system(os.path.join(homeDirectory, "poetry", "bin", "poetry") + ' update')
+            proc = subprocess.call(runPoetryCmd, shell=True)
+            if proc > 0:
+                print("An error occurred with running poetry")
+                exit(1)
+
+            exit(0)
 
     except Exception as e:
         logging.error("Exception occurred %s" % str(e))

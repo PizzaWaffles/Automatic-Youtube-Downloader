@@ -45,6 +45,21 @@ YOUTUBE_XML_FILE = "data/youtubeData.xml"
 # Constant
 FILTER_FOLDER = "data/filters/"
 
+# Colorizer constants
+RED = Fore.RED
+GREEN = Fore.GREEN
+BLUE = Fore.BLUE
+MAGENTA = Fore.MAGENTA
+LIGHT_BLUE = Fore.LIGHTCYAN_EX
+
+
+def write(s, color=None):
+    if color is None:
+        print(s)
+    else:
+        print(color + s + Style.RESET_ALL)
+
+
 def load_configs(configFile):
     global NUM_VIDEOS
     global DESTINATION_FOLDER
@@ -105,7 +120,7 @@ def load_configs(configFile):
 
     except Exception as e:
         logging.error("Cannot find config file!!")
-        print("Cannot find config file!!")
+        write("Cannot find config file!!", RED)
         logging.error(str(e))
         logging.error(traceback.format_exc())
         logVariables()
@@ -122,7 +137,7 @@ def check_channelID(channelID):
             tempData = xml.find('name').get_text(strip=True)
             print()
         except Exception as e:
-            print("Failed to Download Channel list due to html error, check logs")
+            write("Failed to Download Channel list due to html error, check logs", RED)
             videoList = ""
             return 0
     else:
@@ -132,44 +147,45 @@ def check_channelID(channelID):
 
 def check_dependencies():
     try:
-        print("Checking Dependencies....")
+        write("Checking Dependencies....", BLUE)
         homeDirectory = os.getcwd()
         pythonPath = sys.executable
-        print("pythonPath:" + pythonPath)
+        write("Python Path: " + pythonPath)
         getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "get_poetry.py")]
         runPoetryCmd = [os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
         if sys.platform.startswith("win"):
-            print('Using Windows System Settings')
+            write('Using Windows System Settings')
             subprocess.run(getPoetryCmd, shell=True)
             subprocess.run(runPoetryCmd, shell=True)
         else:
             sys.stdout.flush()
             proc = subprocess.call(getPoetryCmd)
             if proc > 0:
-                print("An error occurred with downloading poetry")
+                write("An error occurred with downloading poetry", RED)
                 exit(1)
 
             sys.stdout.flush()
             proc = subprocess.call(runPoetryCmd)
             if proc > 0:
-                print("An error occurred with running poetry")
+                write("An error occurred with running poetry", RED)
                 exit(1)
 
     except Exception as e:
         logging.error("Exception occurred %s" % str(e))
         logging.error(traceback.format_exc())
-        print(str(e))
-        print("An error occured please check logs and try again")
+        write(str(e))
+        write("An error occured please check logs and try again", RED)
         exit()
-    print("Complete.\n")
+    write("Complete.\n", GREEN)
 
 
 def logVariables():
     dicGlobal = globals()
-    dicLocal = locals()
     logging.error("-------Global Vars------")
     for key in dicGlobal.keys():
         logging.error(str(key) + ' = ' + str(dicGlobal[key]).replace('\r', ' ').replace('\n', ' '))
+
+    dicLocal = locals()
     logging.error("-------Local Vars------")
     for key in dicLocal.keys():
         logging.error(str(key) + ' = ' + str(dicLocal[key]).replace('\r', ' ').replace('\n', ' '))
@@ -184,9 +200,9 @@ def get_icons(channel, chid, overwrite=False):
     for d in range(0, len(temp)):
         downloaded[d] = temp[d].strip()
 
-    # print("Downloading Icons....")
+    write("Downloading Icons....", BLUE)
     if len(channel) == 0:
-        print("Error youtubeData.xml file empty please run setup.py to fix")
+        write("Error youtubeData.xml file empty please run setup.py to fix", RED)
 
     else:
         for j in range(0, len(channel)):
@@ -206,25 +222,33 @@ def get_icons(channel, chid, overwrite=False):
                     data = url_data.read()
                     data = json.loads(data.decode('utf-8'))
                     icon_url = data['items'][0]['snippet']['thumbnails']['high']['url']
-                    with open(destinationDir + "\poster.jpg", 'wb') as f:
+                    with open(os.path.join(destinationDir, "poster.jpg"), 'wb') as f:
                         f.write(request.urlopen(icon_url).read())
 
                     with open('data/icon_log.txt', 'a+') as f:
                         f.write(chid[j] + '\n')
 
+                    # Move file
+                    safecopy(os.path.join(destinationDir, "poster.jpg"),
+                             os.path.join(DESTINATION_FOLDER, channel[j]))
                 except Exception as e:
-                    print(Fore.RED + "An error occurred" + Style.RESET_ALL)
+                    print(str(e))
+                    print(Fore.RED + "An error occurred downloading icons, Please check logs" + Style.RESET_ALL)
                     logging.error(str(e))
                     logging.error(traceback.format_exc())
                     logVariables()
                     # print('Complete.')
 
 
+# src is directory plus filename
+# dst is directory with or without filename
 def safecopy(src, dst):
+    src = os.path.join(os.getcwd(), src)
     logging.debug("safecopy requested from %s to %s" % (src, dst))
     if os.path.isdir(dst):
         dst = os.path.join(dst, os.path.basename(src))
-    shutil.copyfile(src, dst)
+    shutil.copy(src, dst)
+    shutil.rmtree(os.path.dirname(src))
 
 
 def parseFormat(formating, name="", date="", title="", chID="", id=""):
@@ -478,7 +502,7 @@ def main():
                             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                                 info_dict = ydl.extract_info(url, download=False)
                                 quality = info_dict.get("format", None)
-                                print("Video Quality: " + quality)
+                                print("Video Quality: " + quality)  #TODO Fix quality setting not appling
                                 video_id = info_dict.get("id", None)
                                 video_title = info_dict.get("title", None)
                                 video_date = info_dict.get("upload_date", None)
@@ -587,7 +611,8 @@ def start():
     try:
         check_dependencies()
     except Exception as e:
-        print("Error, checking dependencies please run setup.py and install dependencies")
+        print(str(e))
+        write("Error, checking dependencies please run setup.py and install dependencies", RED)
     # change working directory to the location of main.py
 
     if not os.path.isfile('main.log'):

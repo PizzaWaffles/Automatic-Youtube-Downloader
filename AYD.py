@@ -35,7 +35,7 @@ init()
 NUM_VIDEOS = 0
 DESTINATION_FOLDER = ""
 API_KEY = ""
-FORMAT = "248+251/299+140/137+140/best"  # default if not specified in config
+FORMAT = "1080p"  # default if not specified in config
 FILE_FORMAT = "%NAME - %UPLOAD_DATE - %TITLE"
 DESTINATION_FORMAT = "%NAME"
 SCHEDULING_MODE = ""
@@ -51,6 +51,12 @@ GREEN = Fore.GREEN
 BLUE = Fore.BLUE
 MAGENTA = Fore.MAGENTA
 LIGHT_BLUE = Fore.LIGHTCYAN_EX
+
+# No longer using codes in config file, use human readable tags ex '1080p'
+VIDEO_QUALITY_LIST = [
+    ['480p', '720p', '1080p HD', '1440p QHD', '2160p 4k', '4320p 8k'],
+    ['244+251/best', '247+251/best', '248+251/299+140/137+140/best', '271+251/best', '313+251/best', '272+251/best']
+]
 
 
 def write(s, color=None):
@@ -185,10 +191,10 @@ def logVariables():
     for key in dicGlobal.keys():
         logging.error(str(key) + ' = ' + str(dicGlobal[key]).replace('\r', ' ').replace('\n', ' '))
 
-    dicLocal = locals()
+    '''dicLocal = locals()
     logging.error("-------Local Vars------")
     for key in dicLocal.keys():
-        logging.error(str(key) + ' = ' + str(dicLocal[key]).replace('\r', ' ').replace('\n', ' '))
+        logging.error(str(key) + ' = ' + str(dicLocal[key]).replace('\r', ' ').replace('\n', ' '))'''
 
 
 def get_icons(channel, chid, overwrite=False):
@@ -231,13 +237,14 @@ def get_icons(channel, chid, overwrite=False):
                     # Move file
                     safecopy(os.path.join(destinationDir, "poster.jpg"),
                              os.path.join(DESTINATION_FOLDER, channel[j]))
+                    shutil.rmtree(os.path.dirname(destinationDir))
                 except Exception as e:
                     print(str(e))
                     print(Fore.RED + "An error occurred downloading icons, Please check logs" + Style.RESET_ALL)
                     logging.error(str(e))
                     logging.error(traceback.format_exc())
                     logVariables()
-                    # print('Complete.')
+    write("Complete.", GREEN)
 
 
 # src is directory plus filename
@@ -248,7 +255,6 @@ def safecopy(src, dst):
     if os.path.isdir(dst):
         dst = os.path.join(dst, os.path.basename(src))
     shutil.copy(src, dst)
-    shutil.rmtree(os.path.dirname(src))
 
 
 def parseFormat(formating, name="", date="", title="", chID="", id=""):
@@ -479,6 +485,57 @@ def main():
                     if not skip_download:
                         logging.info("Downloading - " + title + "  |  " + id)
                         logging.info("Channel - " + str(xmltitle[i]) + "  |  " + channelID)
+
+                        # Get format codes to use
+                        usable_extension = 'webm'
+                        usable_format_code_video = 'bestvideo[ext=webm]'
+                        usable_format_code_audio = 'bestaudio[ext=webm]'
+                        containsWebmContent = False
+
+                        try:
+                            with youtube_dl.YoutubeDL() as ydl:
+                                info_dict = ydl.extract_info(url, download=False)
+                                formats = info_dict.get("formats", None)
+                                for f in formats:
+                                    note = f.get('format_note')
+                                    fID = f.get('format_id')
+                                    extension = f.get('ext')
+
+                                    if FORMAT.split(" ")[0] == note:
+                                        usable_format_code_video = fID
+                                        usable_extension = extension
+                                        containsWebmContent = True
+                                        break
+
+                                for f in formats:
+                                    note = f.get('format_note')
+                                    fID = f.get('format_id')
+                                    extension = f.get('ext')
+
+                                    if usable_extension == extension and note == 'audio only':
+                                        usable_format_code_audio = fID
+
+                            if not containsWebmContent:
+                                usable_format_code_video = 'bestvideo'
+                                usable_format_code_audio = 'bestaudio'
+
+                        except Exception as e:
+                            logging.error(str(e))
+                            if str(e) == "ERROR: This video is unavailable.":
+                                logging.error("This video is not available for download, "
+                                              "maybe streaming or just an announcement post.")
+                                write("This video is not available for download, "
+                                      "maybe streaming or just an announcement post.", RED)
+                                skip_download = True
+                                skip_move = True
+                            else:
+                                logging.error("An error occurred trying to find user requested format,"
+                                              " reverting to best")
+                                usable_format_code_video = 'bestvideo'
+                                usable_format_code_audio = 'bestaudio'
+                                write("Couldn't find request format for this video, defaulting to best", RED)
+
+                    if not skip_download:
                         if os.name == 'nt':  # if windows use supplied ffmpeg
                             ydl_opts = {
                                 'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',
@@ -488,7 +545,7 @@ def main():
                                 'forcetitle': 'true',
                                 'ffmpeg_location': './ffmpeg/bin/',
                                 'ignoreerrors': 'true',
-                                'format': FORMAT
+                                'format': usable_format_code_video + "+" + usable_format_code_audio
                             }
                         else:
                             # not sure here
@@ -496,13 +553,13 @@ def main():
                                 'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',
                                 'writethumbnail': 'true',
                                 'forcetitle': 'true',
-                                'format': FORMAT
+                                'format': usable_format_code_video + "+" + usable_format_code_audio
                             }
                         try:
                             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                                 info_dict = ydl.extract_info(url, download=False)
                                 quality = info_dict.get("format", None)
-                                print("Video Quality: " + quality)  #TODO Fix quality setting not appling
+                                write("Video Quality: " + quality, BLUE)
                                 video_id = info_dict.get("id", None)
                                 video_title = info_dict.get("title", None)
                                 video_date = info_dict.get("upload_date", None)
@@ -513,8 +570,7 @@ def main():
                                 if not is_live:
                                     ydl.download([url])
                                 else:
-                                    print(
-                                        Fore.RED + "Warning! This video is streaming live, it will be skipped" + Style.RESET_ALL)
+                                    write("Warning! This video is streaming live, it will be skipped", RED)
                                     logging.info("Warning! This video is streaming live, it will be skipped")
                                     skip_move = True
 
@@ -522,16 +578,23 @@ def main():
                                 for file in os.listdir('Download/' + uploader + '/'):
                                     if fnmatch.fnmatch(file, "*" + video_title + "*.part"):
                                         skip_move = True
-                                        print(
-                                            Fore.RED + "Failed to Download. Will Retry on next Run." + Style.RESET_ALL)
+                                        write("Failed to Download. Will Retry on next Run.", RED)
                                         logging.error("Found .part file. Failed to Download. Will Retry next Run.")
 
                         except Exception as e:
-                            print(Fore.RED + "Failed to Download" + Style.RESET_ALL)
                             skip_move = True
                             logging.error(str(e))
-                            logging.error(traceback.format_exc())
-                            logVariables()
+
+                            if str(e) == "ERROR: This video is unavailable.":
+                                logging.error("This video is not available for download, "
+                                              "maybe streaming or just an announcement post.")
+                                write("This video is not available for download, "
+                                      "maybe streaming or just an announcement post.", RED)
+                            else:
+                                logging.error("Failed to download video")
+                                write("Failed to Download", RED)
+                                logging.error(traceback.format_exc())
+                                logVariables()
 
                     if not skip_move:
                         subscription_source_dir = 'Download/' + uploader + '/'
@@ -565,8 +628,11 @@ def main():
                             logFile = open(logFileName, 'a')
                             logFile.write(id + ' \n')
                             logFile.close()
+                            logging.info("Successfully downloaded and moved file")
+                            write("Success!", GREEN)
                         except Exception as e:
-                            print(Fore.RED + "An error occured moving file" + Style.RESET_ALL)
+                            print(str(e))
+                            write("An error occured moving file", RED)
                             logging.error(str(e))
                             logging.error(traceback.format_exc())
                             logVariables()

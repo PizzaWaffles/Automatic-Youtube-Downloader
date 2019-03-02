@@ -21,6 +21,7 @@ else:
 
 DEBUGLOGGING = False
 
+# Deprecated no longer using codes
 VIDEO_QUALITY_DICT = {
     '480p': '244+251/best',
     '720p': '247+251/best',
@@ -34,6 +35,17 @@ VIDEO_QUALITY_LIST = [
     ['244+251/best', '247+251/best', '248+251/299+140/137+140/best', '271+251/best', '313+251/best', '272+251/best']
 ]
 
+CONFIGURATIONS_HUMAN_READABLE = {
+    'API_KEY': "Google's API key",
+    'SCHEDULING_MODE': 'Program scheduler(Delay, Once, Time)',
+    'SCHEDULING_MODE_VALUE': 'Program scheduler value(delay time, time to run)',
+    'NUM_VIDEOS': 'Number of videos to download initially',
+    'DESTINATION_FOLDER': 'The folder to move videos to',
+    'DESTINATION_FORMAT': 'The naming convention to use for folders(see GitHub for more info)',
+    'FILE_FORMAT': 'The naming convention to use for files(see GitHub for more info)',
+    'VIDEO_FORMAT': 'Quality setting'
+}
+
 init()  # start colorizer
 RED = Fore.RED
 GREEN = Fore.GREEN
@@ -42,7 +54,7 @@ MAGENTA = Fore.MAGENTA
 LIGHT_BLUE = Fore.LIGHTCYAN_EX
 
 
-def write(s, color=None):
+def write(s="", color=None):
     if color is None:
         print(s)
     else:
@@ -56,10 +68,10 @@ def logPrint(string):
         logging.debug("DEBUGMSG: %s" % str(string))
 
 
-def get_input(msg):  # support for python 2 and 3
+def get_input(msg, color=LIGHT_BLUE):  # support for python 2 and 3
     # Deprecated
     if sys.version_info[0] == 3:
-        write(msg, LIGHT_BLUE)
+        write(msg, color)
         d = input("")
     else:
         d = raw_input(msg)
@@ -163,7 +175,7 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
     while loop:
         write("Would you like to select which channels you want to include, or do you want to include all of them?\n"
               "If you include all channels you can remove them manually by editing " + dataFile + " and deleting the"
-              " entire line of the channel you do not want (Choose this option if you have a lot of subscriptions)\n")
+              " entire line of the channel you do not want (Choose this option if you have a lot of subscriptions)")
         selection = get_input(
               "Enter 'all' to keep all subscriptions or 'select' to select which channels (or 'a' or 's'):").lower()
 
@@ -245,39 +257,77 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
     write("\nComplete.")
 
 
+def edit_config(configPath):
+    if not os.path.isfile(configPath):
+        logging.info(configPath + " not found!!")
+        write(configPath + " not found!!", RED)
+        return 0
+
+# TODO add error processing for empty config file
+    with open(configPath, 'r+') as f:
+        cLines = f.readlines()
+        for i in range(0, len(cLines)):
+            cLines[i] = cLines[i].strip().split('=')
+        loop = True
+        while (loop):
+            write("Please choose a setting to edit:\n", LIGHT_BLUE)
+            for i, line in enumerate(cLines):
+                write('{}.   {}'.format(i + 1, cLines[i][0] + ' = ' + cLines[i][1]))
+
+            menuSelection = get_input("")
+            if menuSelection == "1":
+                write('\n\nChanging ' + cLines)
+
+            elif menuSelection == "2":
+                channel_selection(dataFile)
+            elif menuSelection == "3":
+                install_dependencies()
+            elif menuSelection == "4":
+                add_channel(dataFile)
+            elif menuSelection == "5":
+                edit_config()
+            elif menuSelection == "6":
+                write("\n Goodbye")
+                logging.info("User exited program")
+
+                exit()
+            else:
+                write("\n Not Valid Choice Try again")
+
+
 def setup_config(api_key, configFile):
     logging.info("setup_config function called")
     write("\n\n\nSetting up Config file...", BLUE)
 
-    if os.path.isfile() is configFile:
+    # TODO Add config edit functionality
+    '''if os.path.isfile(configFile):
         loop = True
         while loop:
             response = get_input("Previous config file found would you like to overwrite it or edit it (o or e):")
             if response is 'o' or response is 'O':
                 loop = False
-            if response is 'e' or response is 'E':
+            elif response is 'e' or response is 'E':
                 loop = False
-                #TODO Add edit functionality
             else:
-                write("Please enter o for overwrite or e for edit.", RED)
+                write("Please enter o for overwrite or e for edit.", RED)'''
 
     with open(configFile, 'w') as f:
         f.write("API_KEY=" + api_key + "\n")
         logging.debug("API Key recorded to file")
         loop = True
         while loop:
+            write("\nHow would you like the program to run? (x being any number you want)", LIGHT_BLUE)
             selection = get_input("""
-    \nHow would you like the program to run? (x being any number you want)
         1. Once at startup and then every X minutes
         2. Every day at a specific time
-        3. Once and then exit (for Cron, etc)""")
+        3. Once and then exit (for Cron, etc)""", None)
 
             logging.info("User selected schedule option %s" % selection)
             if selection == '1':
                 delay_time = get_input("Please enter the delay time between checks (in minutes):")
                 if delay_time.isdigit():
                     logging.info("User set delay time between checks to %s" % delay_time)
-                    write("\nSuccess! It will run once and then every " + delay_time + " minutes")
+                    write("\nSuccess! It will run once and then every " + delay_time + " minutes", GREEN)
                     f.write("SCHEDULING_MODE=DELAY\n")
                     f.write("SCHEDULING_MODE_VALUE=" + delay_time + '\n')
                     loop = False
@@ -312,7 +362,7 @@ def setup_config(api_key, configFile):
         while (loop):
             write("\nHow many videos for each channel do you want to download initially? (max 15)\n"
                   "Note that is a automatic video downloader meaning it will download new videos "
-                  "once they are posted. This is not meant to download am entire channel (at least I "
+                  "once they are posted. \nThis is not meant to download am entire channel (at least I "
                   "have not implemented this function if you would like it please request it on GitHub)\n")
             response = get_input("Please enter a number between 1-15")
             if response.isdigit():
@@ -413,15 +463,19 @@ def setup_config(api_key, configFile):
                 f.write('FILE_FORMAT=' + FILE_FORMAT + '\n')
 
         loop = True
-        while (loop):
+        while (loop):   # TODO Test to make sure correct quality is saved
             write("Please choose a quality setting:\n", BLUE)
             for i, line in enumerate(VIDEO_QUALITY_LIST[0]):
                 write('{}. {}'.format(i + 1, line.strip()))
             response = get_input("")
             try:
                 if 0 < int(response) < len(VIDEO_QUALITY_LIST[0]):
-                    f.write("VIDEO_FORMAT=" + VIDEO_QUALITY_LIST[1][int(response)] + "\n")
-                loop = False
+                    temp = VIDEO_QUALITY_LIST[0][int(response-1)].split(" ")[0]
+                    f.write("VIDEO_FORMAT=" + temp + "\n")
+                    loop = False
+                else:
+                    write("Please choose a number between 1-" + str(len(VIDEO_QUALITY_LIST[0])) + "\n", BLUE)
+
             except:
                 write("Please choose a number between 1-" + str(len(VIDEO_QUALITY_LIST[0])) + "\n", BLUE)
 
@@ -460,9 +514,11 @@ def add_channel(dataFile):
 
 
 def get_sub_list(api_key):
+    write("Please login to your youtube account in a browser, click on your account and click 'My Channel'\n"
+          "Look at the address bar, copy everything after channel/, it should start with UC\n"
+          "This is the youtube account that will be scraped for channel subscriptions\n"
+          "(Warning this account must be the same Google account used to sign up for the API key.)")
     my_chid = get_input(
-        "Please login to your youtube account in a browser, click on your account and click 'My Channel'\n"
-        "Look at the address bar, copy everything after channel/, it should start with UC\n"
         "Please paste that in here(If you do not have a Youtube account just click enter): ")
 
     try:
@@ -534,7 +590,8 @@ def main(configFile, dataFile, skipDep):
         2. Channel Selection
         3. Install Dependencies
         4. Add Single Channel Manually
-        5. Exit/Quit
+        5. Edit Configurations
+        6. Exit/Quit
         """)
 
         menuSelection = get_input("What would you like to do? ")
@@ -555,6 +612,8 @@ def main(configFile, dataFile, skipDep):
         elif menuSelection == "4":
             add_channel(dataFile)
         elif menuSelection == "5":
+            edit_config(configFile)
+        elif menuSelection == "6":
             write("\n Goodbye")
             logging.info("User exited program")
 

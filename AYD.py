@@ -346,6 +346,9 @@ class scheduling:
         self.number_of_runs_completed += 1
         self.did_i_just_complete_run = True
 
+    def getNumRuns(self):
+        return self.number_of_runs_completed
+
     def run(self):
 
         print("Starting on run number %s" % self.number_of_runs_completed)
@@ -395,7 +398,7 @@ class scheduling:
         # Now run main
 
 
-def main():
+def main(my_sch):
     global NUM_VIDEOS
     global DESTINATION_FOLDER
     global API_KEY
@@ -423,7 +426,8 @@ def main():
         indexofid = xmlurl[i].find("id=")
         channelIDlist[i] = xmlurl[i][indexofid + 3:]
 
-    get_icons(xmltitle, channelIDlist)
+    if my_sch.getNumRuns() == 1:
+        get_icons(xmltitle, channelIDlist)
 
     for i in range(0, len(xmltitle)):  # for every channel
         skip_download = False
@@ -718,11 +722,11 @@ def start():
             for l in configFile:  # for every config file run main
                 # print("Running config:'" + l + "'")
                 load_configs(l)
-                main()
+                main(sch)
         else:
             # print("Running config:'" + configFile + "'")
             load_configs(configFile)
-            main()
+            main(sch)
         sch.run()
 
 if __name__ == "__main__":

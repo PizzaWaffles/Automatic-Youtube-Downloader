@@ -41,7 +41,7 @@ It will then take you through some config options
 
 To update download this Repo again, unzip file, then copy over you entire 'data' directory from your old directory to the one you just unzipped.
 
-####To version 1.0
+#### To version 1.0
 To update from version 0.1, do the above then edit data/config change the `VIDEO_FORMAT=` line to a quality setting you want currently supported values:
 
     480p

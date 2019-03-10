@@ -57,5 +57,7 @@ ImageEditor
 error.log
 setup.log
 main.log
-AYD.py
 gui.py
+poetry/bin/
+poetry/lib/
+poetry.lock

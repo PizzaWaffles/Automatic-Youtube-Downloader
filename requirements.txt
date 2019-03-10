@@ -1,3 +1,6 @@
 beautifulsoup4
 listparser
 youtube-dl
+colorama
+pygubu
+tendo

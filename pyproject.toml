@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "Automatic-Youtube-Downloader"
+version = "0.1.2"
+description = ""
+authors = ["Dannyman3819 <danielb2cool@gmail.com>"]
+license = "MIT"
+
+repository = "https://github.com/Dannyman3819/Automatic-Youtube-Downloader"
+homepage = "https://github.com/Dannyman3819/Automatic-Youtube-Downloader"
+
+[tool.poetry.dependencies]
+toml = "^0.9"
+python = "^3.5"
+colorama = "^0.4.1"
+listparser = "^0.18.0"
+pygubu = "^0.9.8"
+beautifulsoup4 = "^4.7"
+youtube-dl = "^2019.1.2"
+tendo = "^0.2.12"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

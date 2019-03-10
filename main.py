@@ -14,6 +14,7 @@ from pprint import pprint
 import logging
 import fnmatch
 import re
+import unicodedata
 
 if os.name != 'nt':
     import fnctl
@@ -309,6 +310,16 @@ class scheduling:
         #Now run main
 
 
+def slugify(value):
+    """
+    Normalizes string, converts to lowercase, removes non-alpha characters.
+    """
+    import unicodedata
+    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+    value = re.sub(r'(?u)[^-\w .]', '', value).strip()
+    return value
+
+
 def main():
     global NUM_VIDEOS
     global DESTINATION_FOLDER
@@ -330,7 +341,7 @@ def main():
     valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
 
     for i in range(0, len(data.feeds)):
-        xmltitle[i] = data.feeds[i].title  # channel Title
+        xmltitle[i] = slugify(data.feeds[i].title)  # channel Title
         xmlurl[i] = data.feeds[
             i].url  # formatted like 'https://www.youtube.com/feeds/videos.xml?channel_id=CHANNELID'
         indexofid = xmlurl[i].find("id=")
@@ -370,6 +381,7 @@ def main():
                 escapes = '|'.join([chr(char) for char in range(1, 32)])
                 title = re.sub(escapes, "", title)          # removes all escape characters
                 title = title.replace("-", " ").replace("\\", "").replace("/", "").replace("%", "")
+                title = slugify(title)
 
                 upload_time = v.published.string.split('T')[1].split('+')[0].replace(':', '')[:-2]
                 upload_date = v.published.string.split('T')[0]
@@ -400,7 +412,7 @@ def main():
                         logging.info("Channel - " + str(xmltitle[i]) + "  |  " + channelID)
                         if os.name == 'nt':  # if windows use supplied ffmpeg
                             ydl_opts = {
-                                'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',
+                                'outtmpl': os.path.join('Download', uploader, filename_format + '.%(ext)s'),
                             # need to put channelid in here because what youtube-dl gives may be incorrect
                                 #'simulate': 'true',
                                 'writethumbnail': 'true',
@@ -412,7 +424,7 @@ def main():
                         else:
                             # not sure here
                             ydl_opts = {
-                                'outtmpl': 'Download/' + uploader + '/' + filename_format + '.%(ext)s',
+                                'outtmpl': os.path.join('Download', uploader, filename_format + '.%(ext)s'),
                                 'writethumbnail': 'true',
                                 'forcetitle': 'true',
                                 'format': FORMAT

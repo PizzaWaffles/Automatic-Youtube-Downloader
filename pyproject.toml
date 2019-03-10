@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Automatic-Youtube-Downloader"
-version = "0.1.2"
+version = "1.0"
 description = ""
 authors = ["Dannyman3819 <danielb2cool@gmail.com>"]
 license = "MIT"

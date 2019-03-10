@@ -19,18 +19,12 @@ Download python [here](https://www.python.org/ftp/python/3.5.4/python-3.5.4.exe)
 After installing python open a command prompt or terminal and copy this
 
 ```
-pip install -r requirements.txt
-```
-
-Make sure there are no errors, then copy and paste this
-
-```
 python setup.py
 ```
 
-If its your first time installing select '1'
+If its your first time installing select '1', it will walk you through the process
 
-If you have a new subcription you want to add you can select '2' to go through this process again
+If you have a new subscription you want to add you can select '2' to go through this process again
 
 
 This program will need you to setup a youtube api key, by following this [guide](https://www.slickremix.com/docs/get-api-key-for-youtube/)
@@ -45,7 +39,21 @@ It will then take you through some config options
 
 ## Updating
 
-To update download this Repo again, unzip file, then copy over you entire 'data' directory from your old directory to the one you just unzipped. Thats it!
+To update download this Repo again, unzip file, then copy over you entire 'data' directory from your old directory to the one you just unzipped.
+
+####To version 1.0
+To update from version 0.1, do the above then edit data/config change the `VIDEO_FORMAT=` line to a quality setting you want currently supported values:
+
+    480p
+    720p
+    1080p
+    1440p
+    2160p
+    4320p
+
+So if i wanted 4k videos the line would look line 
+
+`VIDEO_FORMAT=2160p`
 
 ## Usage
 

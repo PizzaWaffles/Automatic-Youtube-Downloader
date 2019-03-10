@@ -185,6 +185,7 @@ def check_dependencies():
     write("Complete.\n", GREEN)
 
 
+
 def logVariables():
     dicGlobal = globals()
     logging.error("-------Global Vars------")
@@ -665,11 +666,11 @@ def start():
     dname = os.path.dirname(abspath)
     os.chdir(dname)
 
-    print("Current Working Directory:" + os.getcwd())
+    print("Current Working Directory:" + os.getcwd() + '\n')
 
     configFileInput = ''
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hc", ["config="])
+        opts, args = getopt.getopt(sys.argv[1:], "hvc", ["config="])
     except getopt.GetoptError:
         print('main.py -c <config file(optional)>\n'
               '   -c: config file optional, if not provided will default to data/config\n'
@@ -681,10 +682,20 @@ def start():
             print('main.py -c <config file(optional)>\n'
                   '   -c: config file optional, if not provided will default to data/config\n'
                   '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
-                  '       main.py -c "config1.txt config2 data/config3"\n')
+                  '       main.py -c "config1.txt config2 data/config3"\n'
+                  '   -v: version number')
             exit()
         elif opt in ("-c", "--config"):
             configFileInput = arg
+        elif opt == '-v':
+            if os.path.isfile('pyproject.toml'):
+                with open("pyproject.toml") as f:
+                    lines = f.readlines()
+                    version = lines[2].split("=")[1].strip()
+                    write("Version:" + version)
+            else:
+                write("Version: 0.1-Pre")
+            exit()
 
     # check if another instance is running
     me = singleton.SingleInstance()  # will sys.exit(-1) if other instance is running

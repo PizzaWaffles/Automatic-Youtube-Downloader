@@ -48,7 +48,7 @@ FILTER_FOLDER = "data/filters/"
 # Colorizer constants
 RED = Fore.RED
 GREEN = Fore.GREEN
-BLUE = Fore.BLUE
+BLUE = Fore.CYAN
 MAGENTA = Fore.MAGENTA
 LIGHT_BLUE = Fore.LIGHTCYAN_EX
 
@@ -183,7 +183,6 @@ def check_dependencies():
         write("An error occured please check logs and try again", RED)
         exit()
     write("Complete.\n", GREEN)
-
 
 
 def logVariables():
@@ -705,7 +704,6 @@ def start():
     except Exception as e:
         print(str(e))
         write("Error, checking dependencies please run setup.py and install dependencies", RED)
-    # change working directory to the location of main.py
 
     if not os.path.isfile('main.log'):
         open('main.log', 'a').close()

@@ -504,7 +504,7 @@ def main(my_sch):
                         # Get format codes to use
                         usable_extension = 'webm'
                         usable_format_code_video = 'bestvideo[ext=webm]'
-                        usable_format_code_audio = 'bestaudio[ext=webm]'
+                        usable_format_code_audio = 'bestaudio'
                         containsWebmContent = False
 
                         try:

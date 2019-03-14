@@ -8,8 +8,6 @@ import subprocess
 import xml.sax.saxutils
 import logging
 import getopt
-from colorama import init
-from colorama import Fore, Back, Style
 
 # support for python 3 and 2
 if sys.version_info[0] == 3:
@@ -46,19 +44,24 @@ CONFIGURATIONS_HUMAN_READABLE = {
     'VIDEO_FORMAT': 'Quality setting'
 }
 
-init()  # start colorizer
-RED = Fore.RED
-GREEN = Fore.GREEN
-BLUE = Fore.BLUE
-MAGENTA = Fore.MAGENTA
-LIGHT_BLUE = Fore.LIGHTCYAN_EX
+# Colorizer constants
+BLACK = 30
+RED = 31
+GREEN = 32
+YELLOW = 33
+BLUE = 34
+MAGENTA = 35
+CYAN = 36
+WHITE = 37
+BLUE = CYAN
+LIGHT_BLUE = 94
 
 
-def write(s="", color=None):
+def write(s, color=None):
     if color is None:
         print(s)
     else:
-        print(color + s + Style.RESET_ALL)
+        print('\033[' + str(color) + 'm' + s + '\033[0m  ')
 
 
 # this should be deprecated in favor of logging.* calls
@@ -68,13 +71,9 @@ def logPrint(string):
         logging.debug("DEBUGMSG: %s" % str(string))
 
 
-def get_input(msg, color=LIGHT_BLUE):  # support for python 2 and 3
-    # Deprecated
-    if sys.version_info[0] == 3:
-        write(msg, color)
-        d = input("")
-    else:
-        d = raw_input(msg)
+def get_input(msg, color=LIGHT_BLUE):
+    write(msg, color)
+    d = input("")
     return d
 
 
@@ -624,7 +623,7 @@ def main(configFile, dataFile, skipDep):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename='setup.log', level=logging.DEBUG, format='%(asctime)s %(message)s',
+    logging.basicConfig(filename='logs/setup.log', level=logging.DEBUG, format='%(asctime)s %(message)s',
         datefmt='%m/%d/%Y %I:%M:%S %p')
 
     logging.info("Program setup.py started")

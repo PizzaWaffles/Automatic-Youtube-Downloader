@@ -17,6 +17,8 @@ pygubu = "^0.9.8"
 beautifulsoup4 = "^4.7"
 youtube-dl = "^2019.1.2"
 tendo = "^0.2.12"
+pystray = "^0.14.4"
+flask = "^1.0.2"
 
 [tool.poetry.dev-dependencies]
 

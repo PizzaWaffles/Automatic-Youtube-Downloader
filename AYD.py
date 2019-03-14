@@ -10,13 +10,10 @@ import json
 from datetime import datetime
 import time
 import sys, getopt
-from pprint import pprint
 import logging
 import re
 import fnmatch
 import subprocess
-from colorama import init
-from colorama import Fore, Back, Style
 from tendo import singleton
 from sys import platform
 
@@ -28,8 +25,7 @@ else:
     print("\nError, please install python3.\n")
     exit(1)
 
-# Start Colorizer
-init()
+VERBOSE = False
 
 # GLOBAL VARS
 NUM_VIDEOS = 0
@@ -46,11 +42,16 @@ YOUTUBE_XML_FILE = "data/youtubeData.xml"
 FILTER_FOLDER = "data/filters/"
 
 # Colorizer constants
-RED = Fore.RED
-GREEN = Fore.GREEN
-BLUE = Fore.CYAN
-MAGENTA = Fore.MAGENTA
-LIGHT_BLUE = Fore.LIGHTCYAN_EX
+BLACK = 30
+RED = 31
+GREEN = 32
+YELLOW = 33
+BLUE = 34
+MAGENTA = 35
+CYAN = 36
+WHITE = 37
+BLUE = CYAN
+LIGHTBLUE = 94
 
 # No longer using codes in config file, use human readable tags ex '1080p'
 VIDEO_QUALITY_LIST = [
@@ -63,7 +64,7 @@ def write(s, color=None):
     if color is None:
         print(s)
     else:
-        print(color + s + Style.RESET_ALL)
+        print('\033[' + str(color) + 'm' + s + '\033[0m  ')
 
 
 def load_configs(configFile):
@@ -158,22 +159,35 @@ def check_dependencies():
         pythonPath = sys.executable
         write("Python Path: " + pythonPath)
         getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "get_poetry.py")]
-        runPoetryCmd = [os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
+        runPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
         if sys.platform.startswith("win"):
-            write('Using Windows System Settings')
-            subprocess.run(getPoetryCmd, shell=True)
-            subprocess.run(runPoetryCmd, shell=True)
-        else:
+            print('Using Windows System Settings')
+            if VERBOSE:
+                print("Verbose settings.")
+                proc = subprocess.Popen(getPoetryCmd, shell=True)
+                proc.wait()
+
+                #proc = subprocess.Popen(runPoetryCmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                proc = subprocess.Popen(runPoetryCmd, shell=True)
+                proc.wait()
+
+            else:
+                sys.stdout.flush()
+                subprocess.run(getPoetryCmd, stdout=None, shell=True)
+                sys.stdout.flush()
+                subprocess.run(runPoetryCmd, stdout=None, shell=True)
+                sys.stdout.flush()
+        else:  # TODO test STDout functions in linux
             sys.stdout.flush()
             proc = subprocess.call(getPoetryCmd)
             if proc > 0:
-                write("An error occurred with downloading poetry", RED)
+                print("An error occurred with downloading poetry")
                 exit(1)
 
             sys.stdout.flush()
             proc = subprocess.call(runPoetryCmd)
             if proc > 0:
-                write("An error occurred with running poetry", RED)
+                print("An error occurred with running poetry")
                 exit(1)
 
     except Exception as e:
@@ -183,6 +197,13 @@ def check_dependencies():
         write("An error occured please check logs and try again", RED)
         exit()
     write("Complete.\n", GREEN)
+
+
+def parentCode(code):
+    if code.strip() == "KILLAYD":
+        print("Got request from parent to exit")
+        logging.debug("Got request from parent to exit...")
+        exit(1)
 
 
 def logVariables():
@@ -240,7 +261,7 @@ def get_icons(channel, chid, overwrite=False):
                     shutil.rmtree(os.path.dirname(destinationDir))
                 except Exception as e:
                     print(str(e))
-                    print(Fore.RED + "An error occurred downloading icons, Please check logs" + Style.RESET_ALL)
+                    write("An error occurred downloading icons, Please check logs", RED)
                     logging.error(str(e))
                     logging.error(traceback.format_exc())
                     logVariables()
@@ -351,13 +372,13 @@ class scheduling:
 
     def run(self):
 
-        print("Starting on run number %s" % self.number_of_runs_completed)
-        logging.info("Starting on run number %s" % self.number_of_runs_completed)
+        #print("Starting on run number %s" % self.number_of_runs_completed)
+        #logging.info("Starting on run number %s" % self.number_of_runs_completed)
         if SCHEDULING_MODE == "TIME_OF_DAY":
-            logging.info("Evaluating time of day run for %s schedule mode" % SCHEDULING_MODE_VALUE)
+            #logging.info("Evaluating time of day run for %s schedule mode" % SCHEDULING_MODE_VALUE)
             if self.did_i_just_complete_run:
                 self.minutes_to_wait = 24 * 60
-                logging.debug("  Just completed run, need to wait %s minutes" % self.minutes_to_wait)
+                #logging.debug("  Just completed run, need to wait %s minutes" % self.minutes_to_wait)
                 self.did_i_just_complete_run = False
             else:
                 self.minutes_to_wait = (SCHEDULING_MODE_VALUE - datetime.now().hour) * 60
@@ -368,34 +389,63 @@ class scheduling:
                 print("  First scheduled run set for %s minutes from now" % self.minutes_to_wait)
 
         elif SCHEDULING_MODE == "RUN_ONCE":
-            logging.info("Evaluating run once schedule mode")
+            #logging.info("Evaluating run once schedule mode")
             if self.did_i_just_complete_run:
-                logging.info("  Just completed run, ending")
-                sys.exit(0)
+                #logging.info("  Just completed run, ending")
+                sys.exit(1)
                 # break
-            else:
-                logging.info("  Starting run once")
+            #else:
+                #logging.info("  Starting run once")
 
         elif SCHEDULING_MODE == "DELAY":
-            logging.info("Evaluating delay schedule mode")
+            #logging.info("Evaluating delay schedule mode")
             if self.did_i_just_complete_run:
                 self.minutes_to_wait = SCHEDULING_MODE_VALUE
-                logging.info("  Next run in %s minutes" % self.minutes_to_wait)
-            else:
-                logging.info("  First run, doing it now")
+                #logging.info("  Next run in %s minutes" % self.minutes_to_wait)
+            #else:
+                #logging.info("  First run, doing it now")
 
         else:
-            logging.info("Unknown SCHEDULING_MODE found %s" % SCHEDULING_MODE)
+            #logging.info("Unknown SCHEDULING_MODE found %s" % SCHEDULING_MODE)
             raise Exception("Unknown SCHEDULING_MODE found %s" % SCHEDULING_MODE)
-            exit(2)
-            # break
+            exit(-1)
 
-        logging.info("Sleeping for %s minutes..." % self.minutes_to_wait)
+        #logging.info("Sleeping for %s minutes..." % self.minutes_to_wait)
+        for i in range(0, self.minutes_to_wait*60):
+            time.sleep(i)
+
+            '''try:
+                line = myQueue.get_nowait()
+            except Empty:
+                print()
+            else:
+                parentCode(line)'''
         time.sleep(self.minutes_to_wait * 60)
 
         self.number_of_runs_completed += 1
         self.did_i_just_complete_run = True
         # Now run main
+
+
+class controlPrintDEP:
+    # default to not print anything
+    output = False
+
+    def __init__(self, output=False):
+        self.output = output
+
+    def setOutput(self, output):
+        self.output = output
+
+    def hidePrint(self, override=False):
+        if (not self.output) or override:
+            # Disable printing
+            sys.stdout = open(os.devnull, 'w')
+
+    def showPrint(self, override=False):
+        if self.output or override:
+            # Enable printing
+            sys.stdout = sys.__stdout__
 
 
 def slugify(value):
@@ -408,7 +458,7 @@ def slugify(value):
     return value
 
 
-def main(my_sch):
+def main(runs):
     global NUM_VIDEOS
     global DESTINATION_FOLDER
     global API_KEY
@@ -420,6 +470,7 @@ def main(my_sch):
 
     data = lp.parse(YOUTUBE_XML_FILE)
     logFileName = "data/log.txt"
+    fullDataLogFileName = "data/fullDataLog.txt"
 
     my_filters = filters()
 
@@ -436,7 +487,7 @@ def main(my_sch):
         indexofid = xmlurl[i].find("id=")
         channelIDlist[i] = xmlurl[i][indexofid + 3:]
 
-    if my_sch.getNumRuns() == 1:
+    if runs == 1:
         get_icons(xmltitle, channelIDlist)
 
     for i in range(0, len(xmltitle)):  # for every channel
@@ -449,7 +500,7 @@ def main(my_sch):
             xml = bs(url_data.decode('utf-8'), 'html.parser')
             videoList = xml.find_all('entry')
         except Exception as e:
-            print(Fore.RED + "Failed to Download Channel list due to html error, check logs" + Style.RESET_ALL)
+            write("Failed to Download Channel list due to html error, check logs", RED)
             videoList = ""
             skip_download = True
             logging.error(str(e))
@@ -494,6 +545,8 @@ def main(my_sch):
                         skip_move = True
 
                     filename_format = parseFormat(FILE_FORMAT, uploader, upload_date, title, channelID,
+                        id.replace("yt:video:", ""))
+                    foldername_format = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID,
                         id.replace("yt:video:", ""))
                     logging.debug("filename_formatted parsed to %s" % filename_format)
 
@@ -612,21 +665,21 @@ def main(my_sch):
                                 logVariables()
 
                     if not skip_move:
-                        subscription_source_dir = 'Download/' + uploader + '/'
-                        subscription_destination_dir = os.path.join(DESTINATION_FOLDER, uploader)
+                        subscription_source_dir = os.path.join('Download', uploader)
+                        subscription_destination_dir = os.path.join(DESTINATION_FOLDER, foldername_format)
                         logging.debug("subscription_source_dir is %s" % subscription_source_dir)
                         logging.debug("subscription_destination_dir is %s" % subscription_destination_dir)
 
                         # destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
                         # destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
 
-                        if not os.path.exists(DESTINATION_FOLDER + uploader):
+                        if not os.path.exists(subscription_destination_dir):
                             logging.info(
                                 "Creating uploader destination directory for %s" % subscription_destination_dir)
                             os.makedirs(subscription_destination_dir)
                         try:
                             logging.info("Now moving content from %s to %s" % (
-                            subscription_source_dir, subscription_destination_dir))
+                                subscription_source_dir, subscription_destination_dir))
 
                             for filename in os.listdir(subscription_source_dir):
                                 logging.info("Checking file %s" % filename)
@@ -634,14 +687,25 @@ def main(my_sch):
                                 where_to_place = subscription_destination_dir
                                 logging.info("Moving file %s to %s" % (source_to_get, where_to_place))
                                 safecopy(source_to_get, where_to_place)
-                                # shutil.move(os.path.join(subscription_source_dir, filename), subscription_destination_dir)
 
                             shutil.rmtree(subscription_source_dir, ignore_errors=True)
                             # shutil.move(videoName, destination + destVideoName)
                             # shutil.move(thumbName, destination + destThumbName)
                             # everything was successful so log that we downloaded and moved the video
+                            imagePath = os.path.join(subscription_destination_dir, filename_format + ".jpg")
                             logFile = open(logFileName, 'a')
                             logFile.write(id + ' \n')
+                            logFile.close()
+                            logFile = open(fullDataLogFileName, 'a')
+                            # ID, Channel Name, Title, Quality, Date, ImagePath
+                            logFile.write(
+                                id.split(':')[2] + '?' +
+                                uploader + '?' +
+                                title + '?' +
+                                quality + '?' +
+                                upload_date + '?' +
+                                imagePath + '\n'
+                            )
                             logFile.close()
                             logging.info("Successfully downloaded and moved file")
                             write("Success!", GREEN)
@@ -661,20 +725,22 @@ def main(my_sch):
 
 
 def start():
+    global VERBOSE
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
     os.chdir(dname)
-
     print("Current Working Directory:" + os.getcwd() + '\n')
 
     configFileInput = ''
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hvc", ["config="])
+        opts, args = getopt.getopt(sys.argv[1:], "hvVc", ["config="])
     except getopt.GetoptError:
         print('main.py -c <config file(optional)>\n'
               '   -c: config file optional, if not provided will default to data/config\n'
               '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
-              '       main.py -c "config1.txt config2 data/config3"\n')
+              '       main.py -c "config1.txt config2 data/config3"\n'
+              '   -v: Current Version\n'
+              '   -V: Run program verbosely in a console window, default is to hide output\n')
         exit(2)
     for opt, arg in opts:
         if opt == '-h':
@@ -682,7 +748,8 @@ def start():
                   '   -c: config file optional, if not provided will default to data/config\n'
                   '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
                   '       main.py -c "config1.txt config2 data/config3"\n'
-                  '   -v: version number')
+                  '   -v: Current Version\n'
+                  '   -V: Run program verbosely in a console window, default is to hide output\n')
             exit()
         elif opt in ("-c", "--config"):
             configFileInput = arg
@@ -695,6 +762,8 @@ def start():
             else:
                 write("Version: 0.1-Pre")
             exit()
+        elif opt == '-V':
+            VERBOSE = True
 
     # check if another instance is running
     me = singleton.SingleInstance()  # will sys.exit(-1) if other instance is running
@@ -705,15 +774,18 @@ def start():
         print(str(e))
         write("Error, checking dependencies please run setup.py and install dependencies", RED)
 
-    if not os.path.isfile('main.log'):
-        open('main.log', 'a').close()
-    loggingFile = open('main.log', 'a', encoding='utf-8')
+    if not os.path.isfile('logs/AYD.log'):
+        open('logs/AYD.log', 'a').close()
+    loggingFile = open('logs/AYD.log', 'a', encoding='utf-8')
     logging.basicConfig(stream=loggingFile, level=logging.DEBUG, format='%(asctime)s %(message)s',
         datefmt='%m/%d/%Y %I:%M:%S %p')
     logging.info("Program main.py started")
 
     if not os.path.isfile('data/log.txt'):
         logging.warning("data/log.txt not found... creating")
+        open('data/log.txt', 'a').close()
+    if not os.path.isfile('data/fullDataLog.txt'):
+        logging.warning("data/fullDataLog.txt not found... creating")
         open('data/log.txt', 'a').close()
     if not os.path.isfile('data/icon_log.txt'):
         open('data/icon_log.txt', 'a').close()
@@ -737,17 +809,27 @@ def start():
 
     sch = scheduling()  # init class
     sch.increase_run()
+    count = 1
     while True:
         if type(configFile) is list:
             for l in configFile:  # for every config file run main
                 # print("Running config:'" + l + "'")
                 load_configs(l)
-                main(sch)
+                main(count)
         else:
             # print("Running config:'" + configFile + "'")
             load_configs(configFile)
-            main(sch)
-        sch.run()
+            main(count)
+        count += 1
+
+
+'''def getParentInput():
+    print("Started the listening thread")
+    for line in iter(sys.stdin.readline, ''):
+        print("line arrived to put on the queue\n")
+        myQueue.put(line)
+    sys.stdin.close()'''
+
 
 if __name__ == "__main__":
     start()

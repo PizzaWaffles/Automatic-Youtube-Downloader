@@ -1,0 +1,16 @@
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Channel</th>
+                <th>Video</th>
+                <th>ID</th>
+            </tr>
+        </thead>
+        <tbody>
+{% for item in logList %}
+    {{ item|safe }}
+{% endfor %}
+         </tbody>
+    </table>
+</div>

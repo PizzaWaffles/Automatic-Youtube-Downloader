@@ -536,6 +536,7 @@ def get_sub_list(api_key, configFile=None):
                 if line.split("=")[0] == "MY_CHANNEL_ID":
                     write("Using My Channel ID from config file")
                     my_chid = line.split("=")[1]
+            f.close()
 
     if TESTING:
         print("Using Travis channel ID")
@@ -560,6 +561,11 @@ def get_sub_list(api_key, configFile=None):
             + my_chid + '&part=snippet%2CcontentDetails&maxResults=50&key=' + api_key +
             '')
 
+        if configFile is not None:
+            file = open(configFile, 'a')
+            file.write("\nMY_CHANNEL_ID="+my_chid + '\n')
+            file.close()
+        
         data = url_data.read()
         data = json.loads(data.decode('utf-8'))
 

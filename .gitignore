@@ -61,3 +61,4 @@ gui.py
 poetry/bin/
 poetry/lib/
 poetry.lock
+logs/

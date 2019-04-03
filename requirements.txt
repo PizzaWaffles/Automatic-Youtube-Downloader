@@ -4,3 +4,6 @@ youtube-dl
 colorama
 pygubu
 tendo
+pystray
+flask
+ydl-binaries

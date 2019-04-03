@@ -1,3 +1,5 @@
+![Build Status](https://travis-ci.com/Dannyman3819/Automatic-Youtube-Downloader.svg?branch=master)
+
 # YouTube Downloader
 
 This python program periodically checks youtube for new videos in a users subscription feed. It will then move it to a designated folder with a video thumbnail and a channel poster. 
@@ -36,6 +38,14 @@ If you have a lot of subscriptions (like me) then I recommend chosing to include
 If you have a fairly smallish amount of subscriptions then you can chose the 'select' opiton and it will ask you for each channel if you want to include it or not
 
 It will then take you through some config options
+
+## Running
+
+Use this command to run:
+
+```
+python main.py
+```
 
 ## Updating
 

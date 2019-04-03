@@ -39,6 +39,14 @@ If you have a fairly smallish amount of subscriptions then you can chose the 'se
 
 It will then take you through some config options
 
+## Running
+
+Use this command to run:
+
+```
+python main.py
+```
+
 ## Updating
 
 To update download this Repo again, unzip file, then copy over you entire 'data' directory from your old directory to the one you just unzipped.

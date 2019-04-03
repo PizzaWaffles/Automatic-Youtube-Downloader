@@ -19,6 +19,7 @@ youtube-dl = "^2019.1.2"
 tendo = "^0.2.12"
 pystray = "^0.14.4"
 flask = "^1.0.2"
+ydl-binaries = "^1.1.9"
 
 [tool.poetry.dev-dependencies]
 

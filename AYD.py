@@ -611,7 +611,7 @@ def main(runs):
                                 # 'simulate': 'true',
                                 'writethumbnail': 'true',
                                 'forcetitle': 'true',
-                                'ffmpeg_location': './ffmpeg/bin/',
+                                #'ffmpeg_location': './ffmpeg/bin/',
                                 'ignoreerrors': 'true',
                                 'format': usable_format_code_video + "+" + usable_format_code_audio
                             }

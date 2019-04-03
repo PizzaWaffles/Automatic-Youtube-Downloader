@@ -6,3 +6,4 @@ pygubu
 tendo
 pystray
 flask
+ydl-binaries

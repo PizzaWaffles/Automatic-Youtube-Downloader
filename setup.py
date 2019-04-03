@@ -18,6 +18,7 @@ else:
     exit(1)
 
 DEBUGLOGGING = False
+TESTING = False
 
 # Deprecated no longer using codes
 VIDEO_QUALITY_DICT = {
@@ -120,7 +121,8 @@ def format_youtube_data():
         write("Please goto https://www.youtube.com/subscription_manager")
         write("On the bottom of the page click 'Export Subscriptions'")
         write("Put that file in the data directory so it looks like " + subFile)
-        get_input("Click enter to continue.....")
+        if not TESTING:
+            get_input("Click enter to continue.....")
 
         if os.path.exists(os.path.join("data" + subFile)):
             write("\nFile Found\n\n")
@@ -141,7 +143,11 @@ def get_API_key():
     while setup_not_complete:
         write("\n\nPlease goto https://www.slickremix.com/docs/get-api-key-for-youtube/")
         write("Follow this guide to setup an API key you can name the project whatever you want")
-        api_key = get_input("Please enter your API key now:")
+        if TESTING:
+            print("Using Test key from travis-ci")
+            api_key = str(os.environ.get('APIKEY'))
+        else:
+            api_key = get_input("Please enter your API key now:")
 
         write("Testing key.....", BLUE)
         try:
@@ -174,9 +180,9 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
     while loop:
         write("Would you like to select which channels you want to include, or do you want to include all of them?\n"
               "If you include all channels you can remove them manually by editing " + dataFile + " and deleting the"
-              " entire line of the channel you do not want (Choose this option if you have a lot of subscriptions)")
+                                                                                                  " entire line of the channel you do not want (Choose this option if you have a lot of subscriptions)")
         selection = get_input(
-              "Enter 'all' to keep all subscriptions or 'select' to select which channels (or 'a' or 's'):").lower()
+            "Enter 'all' to keep all subscriptions or 'select' to select which channels (or 'a' or 's'):").lower()
 
         logging.debug("User selected %s for all or single channel selection" % selection)
         if selection == 'all' or selection == 'a':
@@ -262,7 +268,7 @@ def edit_config(configPath):
         write(configPath + " not found!!", RED)
         return 0
 
-# TODO add error processing for empty config file
+    # TODO add error processing for empty config file
     with open(configPath, 'r+') as f:
         cLines = f.readlines()
         for i in range(0, len(cLines)):
@@ -419,11 +425,9 @@ def setup_config(api_key, configFile):
 
             DESTINATION_FORMAT = ""
             if response is "1":
-                write()
                 DESTINATION_FORMAT = "%NAME [Youtube-$CHANNEL_ID]"
                 loop = False
             elif response is "2":
-                write()
                 DESTINATION_FORMAT = "%NAME"
                 loop = False
             # elif response is "3":
@@ -446,11 +450,9 @@ def setup_config(api_key, configFile):
             logging.info("User selected %s for destination format" % response)
             FILE_FORMAT = ""
             if response is "1":
-                write()
                 FILE_FORMAT = "%TITLE - [%VIDEO_ID]"
                 loop = False
             elif response is "2":
-                write()
                 FILE_FORMAT = "%NAME - %UPLOAD_DATE - %TITLE"
                 loop = False
             # elif response is "3":
@@ -462,21 +464,21 @@ def setup_config(api_key, configFile):
                 f.write('FILE_FORMAT=' + FILE_FORMAT + '\n')
 
         loop = True
-        while (loop):   # TODO Test to make sure correct quality is saved
+        while (loop):  # TODO Test to make sure correct quality is saved
             write("Please choose a quality setting:\n", BLUE)
             for i, line in enumerate(VIDEO_QUALITY_LIST[0]):
                 write('{}. {}'.format(i + 1, line.strip()))
-            response = get_input("")
-            try:
-                if 0 < int(response) < len(VIDEO_QUALITY_LIST[0]):
-                    temp = VIDEO_QUALITY_LIST[0][int(response-1)].split(" ")[0]
-                    f.write("VIDEO_FORMAT=" + temp + "\n")
-                    loop = False
-                else:
-                    write("Please choose a number between 1-" + str(len(VIDEO_QUALITY_LIST[0])) + "\n", BLUE)
-
-            except:
+            response = int(get_input(""))
+            # try:
+            if 0 < int(response) < len(VIDEO_QUALITY_LIST[0]):
+                temp = VIDEO_QUALITY_LIST[0][int(response - 1)].split(" ")[0]
+                f.write("VIDEO_FORMAT=" + temp + "\n")
+                loop = False
+            else:
                 write("Please choose a number between 1-" + str(len(VIDEO_QUALITY_LIST[0])) + "\n", BLUE)
+
+            # except:
+            #    write("Please choose a number between 1-" + str(len(VIDEO_QUALITY_LIST[0])) + "\n", BLUE)
 
 
 def add_channel(dataFile):
@@ -517,12 +519,17 @@ def get_sub_list(api_key):
           "Look at the address bar, copy everything after channel/, it should start with UC\n"
           "This is the youtube account that will be scraped for channel subscriptions\n"
           "(Warning this account must be the same Google account used to sign up for the API key.)")
-    my_chid = get_input(
-        "Please paste that in here(If you do not have a Youtube account just click enter): ")
+
+    if TESTING:
+        print("Using Travis channel ID")
+        my_chid = str(os.environ.get('MYCHID'))
+    else:
+        my_chid = get_input(
+            "Please paste that in here(If you do not have a Youtube account just click enter): ")
 
     try:
         if my_chid.strip() is "":
-            #TODO Add functionallity for no youtube channel
+            # TODO Add functionallity for no youtube channel
             write("Please put ")
 
         my_chid = my_chid.split("?")[0]
@@ -604,6 +611,8 @@ def main(configFile, dataFile, skipDep):
             channel_selection(dataFile, "", titleList, idList)
             setup_config(api_key, configFile)
             write('\n\n\n----------This completes the setup you may now exit-----------\n', GREEN)
+            if TESTING:
+                exit(0)
         elif menuSelection == "2":
             channel_selection(dataFile)
         elif menuSelection == "3":
@@ -623,6 +632,12 @@ def main(configFile, dataFile, skipDep):
 
 
 if __name__ == "__main__":
+    if not os.path.exists('logs/'):
+        logging.info("logs directory not found, creating...")
+        os.makedirs('logs/')
+    if not os.path.isfile('logs/setup.log'):
+        logging.info("logs/setup.log not found, creating...")
+        open('logs/setup.log', 'a').close()
     logging.basicConfig(filename='logs/setup.log', level=logging.DEBUG, format='%(asctime)s %(message)s',
         datefmt='%m/%d/%Y %I:%M:%S %p')
 
@@ -681,6 +696,14 @@ if __name__ == "__main__":
         # write('--Using data/youtubeData.xml')
     else:
         dataFile = dataFileInput
+
+    try:
+        name = os.environ.get('TRAVIS')
+        if name:
+            TESTING = True
+            print("Using Travis test settings")
+    except:
+        print("")
 
     write("--Outputting data to:" + dataFile)
     write("--Config file:" + configFile)

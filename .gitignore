@@ -62,3 +62,4 @@ poetry/bin/
 poetry/lib/
 poetry.lock
 flask/
+logs/

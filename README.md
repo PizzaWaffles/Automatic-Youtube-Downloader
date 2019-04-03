@@ -1,3 +1,5 @@
+![Build Status](https://travis-ci.com/Dannyman3819/Automatic-Youtube-Downloader.svg?branch=master)
+
 # YouTube Downloader
 
 This python program periodically checks youtube for new videos in a users subscription feed. It will then move it to a designated folder with a video thumbnail and a channel poster. 

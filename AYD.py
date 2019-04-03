@@ -231,13 +231,16 @@ def get_icons(channel, chid, overwrite=False):
                     with open(os.path.join(destinationDir, "poster.jpg"), 'wb') as f:
                         f.write(request.urlopen(icon_url).read())
 
-                    with open('data/icon_log.txt', 'a+') as f:
-                        f.write(chid[j] + '\n')
+                    if not os.path.isdir(os.path.join(DESTINATION_FOLDER, channel[j])):
+                        os.mkdir(os.path.join(DESTINATION_FOLDER, channel[j]))
 
                     # Move file
                     safecopy(os.path.join(destinationDir, "poster.jpg"),
-                             os.path.join(DESTINATION_FOLDER, channel[j]))
+                             os.path.join(DESTINATION_FOLDER, channel[j], 'poster.jpg'))
                     shutil.rmtree(os.path.dirname(destinationDir))
+
+                    with open('data/icon_log.txt', 'a+') as f:
+                        f.write(chid[j] + '\n')
                 except Exception as e:
                     print(str(e))
                     print(Fore.RED + "An error occurred downloading icons, Please check logs" + Style.RESET_ALL)
@@ -405,6 +408,7 @@ def slugify(value):
     import unicodedata
     value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
     value = re.sub(r'(?u)[^-\w .]', '', value).strip()
+    value = value.replace(":", "")
     return value
 
 
@@ -578,7 +582,7 @@ def main(my_sch):
                                 video_id = info_dict.get("id", None)
                                 video_title = info_dict.get("title", None)
                                 video_date = info_dict.get("upload_date", None)
-                                uploader = info_dict.get("uploader", None)
+                                #uploader = info_dict.get("uploader", None)
                                 is_live = info_dict.get("is_live", None)
                                 if 'entries' in info_dict:
                                     is_live = info_dict['entries'][0]["is_live"]

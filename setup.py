@@ -542,67 +542,69 @@ def get_sub_list(api_key, configFile=None):
         print("Using Travis channel ID")
         my_chid = str(os.environ.get('MYCHID'))
     else:
-        if my_chid is "":
-            write("Please login to your youtube account in a browser, click on your account and click 'My Channel'\n"
-                  "Look at the address bar, copy everything after channel/, it should start with UC\n"
-                  "This is the youtube account that will be scraped for channel subscriptions\n"
-                  "(Warning this account must be the same Google account used to sign up for the API key.)")
-            my_chid = get_input(
-                "Please paste that in here: ")
+        while(True): 
+            if my_chid is "":
+                write("Please login to your youtube account in a browser, click on your account and click 'My Channel'\n"
+                      "Look at the address bar, copy everything after channel/, it should start with UC\n"
+                      "This is the youtube account that will be scraped for channel subscriptions\n"
+                      "(Warning this account must be the same Google account used to sign up for the API key.)")
+                my_chid = get_input(
+                    "Please paste that in here: ")
+                if my_chid is not "":
+                    break
 
-    try:
-        if my_chid.strip() is "":
-            # TODO Add functionallity for no youtube channel
-            write("Please put ")
+        try:
+            if my_chid.strip() is "":
+                # TODO Add functionallity for no youtube channel
+                write("Please put ")
+            my_chid = my_chid.split("?")[0]
+            url_data = urlopen(
+                'https://www.googleapis.com/youtube/v3/subscriptions?channelId='
+                + my_chid + '&part=snippet%2CcontentDetails&maxResults=50&key=' + api_key +
+                '')
 
-        my_chid = my_chid.split("?")[0]
-        url_data = urlopen(
-            'https://www.googleapis.com/youtube/v3/subscriptions?channelId='
-            + my_chid + '&part=snippet%2CcontentDetails&maxResults=50&key=' + api_key +
-            '')
+            if configFile is not None:
+                file = open(configFile, 'a')
+                file.write("\nMY_CHANNEL_ID="+my_chid + '\n')
+                file.close()
+            
+            data = url_data.read()
+            data = json.loads(data.decode('utf-8'))
 
-        if configFile is not None:
-            file = open(configFile, 'a')
-            file.write("\nMY_CHANNEL_ID="+my_chid + '\n')
-            file.close()
-        
-        data = url_data.read()
-        data = json.loads(data.decode('utf-8'))
+            titleList = []
+            idList = []
 
-        titleList = []
-        idList = []
+            for item in data['items']:
+                titleList.append(item['snippet']['title'])
+                idList.append(item['snippet']['resourceId']['channelId'])
 
-        for item in data['items']:
-            titleList.append(item['snippet']['title'])
-            idList.append(item['snippet']['resourceId']['channelId'])
+            # results_per_page = data['pageInfo']['resultsPerPage']
+            # total_results = data['pageInfo']['totalResults']
+            while True:
+                if "nextPageToken" in data:
+                    # There is more pages we need to get
+                    next_page_token = data['nextPageToken']
 
-        # results_per_page = data['pageInfo']['resultsPerPage']
-        # total_results = data['pageInfo']['totalResults']
-        while True:
-            if "nextPageToken" in data:
-                # There is more pages we need to get
-                next_page_token = data['nextPageToken']
+                    url_data = urlopen(
+                        'https://www.googleapis.com/youtube/v3/subscriptions?&pageToken=' + next_page_token +
+                        '&channelId=' + my_chid + '&part=snippet%2CcontentDetails&maxResults=50&key=' + api_key)
 
-                url_data = urlopen(
-                    'https://www.googleapis.com/youtube/v3/subscriptions?&pageToken=' + next_page_token +
-                    '&channelId=' + my_chid + '&part=snippet%2CcontentDetails&maxResults=50&key=' + api_key)
+                    data = url_data.read()
+                    data = json.loads(data.decode('utf-8'))
 
-                data = url_data.read()
-                data = json.loads(data.decode('utf-8'))
+                    for item in data['items']:
+                        titleList.append(item['snippet']['title'])
+                        idList.append(item['snippet']['resourceId']['channelId'])
 
-                for item in data['items']:
-                    titleList.append(item['snippet']['title'])
-                    idList.append(item['snippet']['resourceId']['channelId'])
+                else:
+                    return [titleList, idList]
 
-            else:
-                return [titleList, idList]
-
-    except Exception as e:
-        logging.error("ERROR: My Channel Key incorrect")
-        logging.error("ERROR" + str(e))
-        logging.error(traceback.format_exc())
-        write("There was something wrong with your key, please check the setup.log", RED)
-        exit(0)
+        except Exception as e:
+            logging.error("ERROR: My Channel Key incorrect")
+            logging.error("ERROR" + str(e))
+            logging.error(traceback.format_exc())
+            write("There was something wrong with your key, please check the setup.log", RED)
+            exit(0)
 
 
 def main(configFile, dataFile, skipDep):

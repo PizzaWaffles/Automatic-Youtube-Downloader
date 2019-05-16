@@ -120,11 +120,11 @@ def format_youtube_data():
         write("\n\nSetting up Youtube configs")
         write("Please goto https://www.youtube.com/subscription_manager")
         write("On the bottom of the page click 'Export Subscriptions'")
-        write("Put that file in the data directory so it looks like " + subFile)
+        write("Put that file in the data directory so it looks like data/" + subFile)
         if not TESTING:
             get_input("Click enter to continue.....")
 
-        if os.path.exists(os.path.join("data" + subFile)):
+        if os.path.exists(os.path.join("data", subFile)):
             write("\nFile Found\n\n")
             logging.info(subFile + " was found")
             setup_not_complete = False
@@ -182,6 +182,10 @@ def get_API_key():
 def channel_selection(dataFile, inputFile="data/subscription_manager.xml", titleList=None, idList=None):
     if titleList is not None:
         inputFile = None
+    else:
+        titleList = []
+        idList = []
+
 
     import listparser as lp
     logging.debug("Channel_selection started")
@@ -216,13 +220,15 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
     # logging.debug("Parsing " + inputFile)
     file.write('<opml version="1.1">\n<body>\n')
 
-    if titleList is None:
+    if inputFile is not None:
         d = lp.parse(inputFile)
         l = d.feeds
 
         for count, channel in enumerate(l):
-            titleList[count] = channel.title
-            idList[count] = channel.url
+            #titleList[count] = channel.title
+            #idList[count] = channel.url
+            titleList.append(channel.title)
+            idList.append(channel.url)
     else:
         for count, channel in enumerate(idList):
             idList[count] = "https://www.youtube.com/feeds/videos.xml?channel_id=" + idList[count]
@@ -546,14 +552,14 @@ def get_sub_list(api_key, configFile=None):
             write("Please login to your youtube account in a browser, click on your account and click 'My Channel'\n"
                   "Look at the address bar, copy everything after channel/, it should start with UC\n"
                   "This is the youtube account that will be scraped for channel subscriptions\n"
-                  "(Warning this account must be the same Google account used to sign up for the API key.)")
+                  "(Warning this account must be the same Google account used to sign up for the API key.)\n"
+                  "Or leave blank if you want to manually grab the subscription file.")
             my_chid = get_input(
                 "Please paste that in here: ")
 
     try:
         if my_chid.strip() is "":
-            # TODO Add functionallity for no youtube channel
-            write("Please put ")
+            return [None, None]
 
         my_chid = my_chid.split("?")[0]
         url_data = urlopen(
@@ -634,7 +640,11 @@ def main(configFile, dataFile, skipDep):
                 install_dependencies()
             api_key = get_API_key()
             titleList, idList = get_sub_list(api_key)
-            channel_selection(dataFile, "", titleList, idList)
+            if titleList is None:
+                format_youtube_data()
+                channel_selection(dataFile, "data/subscription_manager.xml")
+            else:
+                channel_selection(dataFile, "", titleList, idList)
             setup_config(api_key, configFile)
             write('\n\n\n----------This completes the setup you may now exit-----------\n', GREEN)
             if TESTING:
@@ -642,7 +652,11 @@ def main(configFile, dataFile, skipDep):
         elif menuSelection == "2":
             api_key = get_API_key_config(configFile)
             titleList, idList = get_sub_list(api_key, configFile)
-            channel_selection(dataFile, "", titleList, idList)
+            if titleList is None:
+                format_youtube_data()
+                channel_selection(dataFile, "data/subscription_manager.xml")
+            else:
+                channel_selection(dataFile, "", titleList, idList)
         elif menuSelection == "3":
             install_dependencies()
         elif menuSelection == "4":

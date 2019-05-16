@@ -79,6 +79,7 @@ def get_input(msg, color=LIGHT_BLUE):
 
 
 def install_dependencies():
+    logging.debug("install_dependencies function called")
     try:
         write("Checking Dependencies....", BLUE)
         homeDirectory = os.getcwd()
@@ -113,6 +114,7 @@ def install_dependencies():
 
 
 def format_youtube_data():
+    logging.debug("format_youtube_data function called")
     api_key = ""
     setup_not_complete = True
     subFile = "subscription_manager.xml"
@@ -135,6 +137,7 @@ def format_youtube_data():
 
 
 def get_API_key_config(cFile):
+    logging.debug("get_API_key_config function called")
     if os.path.isfile(cFile):
         f = open(cFile)
         l = f.readlines()
@@ -180,6 +183,7 @@ def get_API_key():
 
 
 def channel_selection(dataFile, inputFile="data/subscription_manager.xml", titleList=None, idList=None):
+    logging.debug("channel_selection function called")
     if titleList is not None:
         inputFile = None
     else:
@@ -281,6 +285,7 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
 
 
 def edit_config(configPath):
+    logging.debug("edit_config function called")
     if not os.path.isfile(configPath):
         logging.info(configPath + " not found!!")
         write(configPath + " not found!!", RED)
@@ -500,6 +505,7 @@ def setup_config(api_key, configFile):
 
 
 def add_channel(dataFile):
+    logging.debug("add_channel function called")
     chName = get_input("\n\nPlease enter the channel Name:")
     chID = get_input("Please enter the channel ID:")
     get_input("\nYou entered\nName:" + chName + "\nChannel ID:" + chID + "\nIf this is correct press enter...")
@@ -533,6 +539,7 @@ def add_channel(dataFile):
 
 
 def get_sub_list(api_key, configFile=None):
+    logging.debug("get_sub_list function called")
     my_chid = ""
     if configFile is not None:
         if os.path.isfile(configFile):

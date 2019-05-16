@@ -555,14 +555,17 @@ def get_sub_list(api_key, configFile=None):
         print("Using Travis channel ID")
         my_chid = str(os.environ.get('MYCHID'))
     else:
-        if my_chid is "":
-            write("Please login to your youtube account in a browser, click on your account and click 'My Channel'\n"
-                  "Look at the address bar, copy everything after channel/, it should start with UC\n"
-                  "This is the youtube account that will be scraped for channel subscriptions\n"
-                  "(Warning this account must be the same Google account used to sign up for the API key.)\n"
-                  "Or leave blank if you want to manually grab the subscription file.")
-            my_chid = get_input(
-                "Please paste that in here: ")
+        while True:
+            if my_chid is "":
+                write("Please login to your youtube account in a browser, click on your account and click 'My Channel'\n"
+                      "Look at the address bar, copy everything after channel/, it should start with UC\n"
+                      "This is the youtube account that will be scraped for channel subscriptions\n"
+                      "(Warning this account must be the same Google account used to sign up for the API key.)\n"
+                      "Or leave blank if you want to manually grab the subscription file.")
+                my_chid = get_input(
+                    "Please paste that in here: ")
+            else:
+                break
 
     try:
         if my_chid.strip() is "":

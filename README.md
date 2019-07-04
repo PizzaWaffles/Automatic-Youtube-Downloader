@@ -16,6 +16,12 @@ To install first download this repo, in the upper right of this repo click 'Down
 
 Download python [here](https://www.python.org/ftp/python/3.5.4/python-3.5.4.exe) currently Python 3.5 is supported but should work with newer versions of python (3.5+)
 
+Run this in the command prompt in the root directory of the program
+
+```
+pip install -r requirements.txt
+```
+
 **When installing make sure to click 'Add to PATH'**
 
 After installing python open a command prompt or terminal and copy this

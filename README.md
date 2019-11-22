@@ -1,4 +1,4 @@
-![Build Status](https://travis-ci.com/Dannyman3819/Automatic-Youtube-Downloader.svg?branch=master)
+![Build Status](https://api.travis-ci.com/PizzaWaffles/Automatic-Youtube-Downloader.svg?branch=master)
 
 # YouTube Downloader
 
@@ -16,18 +16,26 @@ To install first download this repo, in the upper right of this repo click 'Down
 
 Download python [here](https://www.python.org/ftp/python/3.5.4/python-3.5.4.exe) currently Python 3.5 is supported but should work with newer versions of python (3.5+)
 
+**When installing make sure to click 'Add to PATH'**
+
 Run this in the command prompt in the root directory of the program
 
 ```
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
-**When installing make sure to click 'Add to PATH'**
+**Linux/Unix systems, must install ffmpeg**
+
+Run this to install ffmpeg
+
+```sudo apt-get install ffmpeg```
+
+## Setup
 
 After installing python open a command prompt or terminal and copy this
 
 ```
-python setup.py
+python3 setup.py
 ```
 
 If its your first time installing select '1', it will walk you through the process
@@ -50,7 +58,7 @@ It will then take you through some config options
 Use this command to run:
 
 ```
-python main.py
+python3 main.py
 ```
 
 ## Updating
@@ -74,7 +82,7 @@ So if i wanted 4k videos the line would look line
 ## Usage
 
 ```
-python main.py [OPTIONS]
+python3 main.py [OPTIONS]
 ```
 
 ### Options
@@ -135,15 +143,11 @@ The only wildcard supported at the moment is *. The default behavior without wil
 
 ## WIP Features
 
-
+Will no longer add features, but will fix bugs as they arise
 
 ## Issues
 
-- If you get "Failed to download please update youtube-dl with 
-
-    `pip uninstall youtube-dl` 
-
-    `pip install youtube-dl`
+-
 
 Any other issues please report on Github if you would like them fixed or looked at.
 

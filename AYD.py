@@ -507,36 +507,70 @@ def main(my_sch):
 
                         # Get format codes to use
                         usable_extension = 'webm'
-                        usable_format_code_video = 'bestvideo[ext=webm]'
-                        usable_format_code_audio = 'bestaudio'
+                       # usable_format_code_video = 'bestvideo[ext=webm]'
+                       # usable_format_code_audio = 'bestaudio'
                         containsWebmContent = False
 
+                        usable_format_code_audio = 'bestaudio[ext=m4a]/bestaudio'
+                        usable_format_code_video = '(bestvideo[vcodec^=av01][height>=2160][fps>30]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=2160][fps>30]/' \
+                                              'bestvideo[vcodec=vp9][height>=2160][fps>30]/' \
+                                              'bestvideo[vcodec^=av01][height>=2160]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=2160]/' \
+                                              'bestvideo[vcodec=vp9][height>=2160]/' \
+                                              'bestvideo[height>=2160]/' \
+                                              'bestvideo[vcodec^=av01][height>=1440][fps>30]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=1440][fps>30]/' \
+                                              'bestvideo[vcodec=vp9][height>=1440][fps>30]/' \
+                                              'bestvideo[vcodec^=av01][height>=1440]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=1440]/' \
+                                              'bestvideo[vcodec=vp9][height>=1440]/' \
+                                              'bestvideo[height>=1440]/' \
+                                              'bestvideo[vcodec^=av01][height>=1080][fps>30]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=1080][fps>30]/' \
+                                              'bestvideo[vcodec=vp9][height>=1080][fps>30]/' \
+                                              'bestvideo[vcodec^=av01][height>=1080]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=1080]/' \
+                                              'bestvideo[vcodec=vp9][height>=1080]/' \
+                                              'bestvideo[height>=1080]/' \
+                                              'bestvideo[vcodec^=av01][height>=720][fps>30]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=720][fps>30]/' \
+                                              'bestvideo[vcodec=vp9][height>=720][fps>30]/' \
+                                              'bestvideo[vcodec^=av01][height>=720]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=720]/' \
+                                              'bestvideo[vcodec=vp9][height>=720]/' \
+                                              'bestvideo[height>=720]/' \
+                                              'bestvideo)'
+
                         try:
-                            with youtube_dl.YoutubeDL() as ydl:
-                                info_dict = ydl.extract_info(url, download=False)
-                                formats = info_dict.get("formats", None)
-                                for f in formats:
-                                    note = f.get('format_note')
-                                    fID = f.get('format_id')
-                                    extension = f.get('ext')
+                            if FORMAT.split(" ")[0] == 'best':
+                                logging.info("Skipping getting format codes using granulated option")
+                            else:
+                                with youtube_dl.YoutubeDL() as ydl:
+                                    info_dict = ydl.extract_info(url, download=False)
+                                    formats = info_dict.get("formats", None)
+                                    for f in formats:
+                                        note = f.get('format_note')
+                                        fID = f.get('format_id')
+                                        extension = f.get('ext')
 
-                                    if FORMAT.split(" ")[0] == note:
-                                        usable_format_code_video = fID
-                                        usable_extension = extension
-                                        containsWebmContent = True
-                                        break
+                                        if FORMAT.split(" ")[0] == note:
+                                            usable_format_code_video = fID
+                                            usable_extension = extension
+                                            containsWebmContent = True
+                                            break
 
-                                for f in formats:
-                                    note = f.get('format_note')
-                                    fID = f.get('format_id')
-                                    extension = f.get('ext')
+                                    for f in formats:
+                                        note = f.get('format_note')
+                                        fID = f.get('format_id')
+                                        extension = f.get('ext')
 
-                                    if usable_extension == extension and note == 'audio only':
-                                        usable_format_code_audio = fID
+                                        if usable_extension == extension and note == 'audio only':
+                                            usable_format_code_audio = fID
 
-                            if not containsWebmContent:
-                                usable_format_code_video = 'bestvideo'
-                                usable_format_code_audio = 'bestaudio'
+                                if not containsWebmContent:
+                                    usable_format_code_video = 'bestvideo'
+                                    usable_format_code_audio = 'bestaudio'
 
                         except Exception as e:
                             logging.error(str(e))
@@ -564,15 +598,15 @@ def main(my_sch):
                                 'forcetitle': 'true',
                                 'ffmpeg_location': './ffmpeg/bin/',
                                 'ignoreerrors': 'true',
-                                'format': usable_format_code_video + "+" + usable_format_code_audio
+                                'format': usable_format_code_video + "+" + usable_format_code_audio + '/best'
                             }
                         else:
-                            # not sure here
+                            # Linux/Unix
                             ydl_opts = {
                                 'outtmpl': os.path.join('Download', uploader, filename_format + '.%(ext)s'),
                                 'writethumbnail': 'true',
                                 'forcetitle': 'true',
-                                'format': usable_format_code_video + "+" + usable_format_code_audio
+                                'format': usable_format_code_video + "+" + usable_format_code_audio + '/best'
                             }
                         try:
                             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -672,7 +706,7 @@ def start():
 
     configFileInput = ''
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hvc", ["config="])
+        opts, args = getopt.getopt(sys.argv[1:], "hvc:", ["config="])
     except getopt.GetoptError:
         print('main.py -c <config file(optional)>\n'
               '   -c: config file optional, if not provided will default to data/config\n'
@@ -709,7 +743,7 @@ def start():
         write("Error, checking dependencies please run setup.py and install dependencies", RED)
 
     if not os.path.isfile('main.log'):
-        open('main.log', 'a').close()
+        open('logs/main.log', 'a').close()
     loggingFile = open('main.log', 'a', encoding='utf-8')
     logging.basicConfig(stream=loggingFile, level=logging.DEBUG, format='%(asctime)s %(message)s',
         datefmt='%m/%d/%Y %I:%M:%S %p')

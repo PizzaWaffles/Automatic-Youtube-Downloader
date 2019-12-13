@@ -157,7 +157,7 @@ def check_dependencies():
         homeDirectory = os.getcwd()
         pythonPath = sys.executable
         write("Python Path: " + pythonPath)
-        getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "get_poetry.py")]
+        getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "get_poetry.py"), "--version", "0.12.11"]
         runPoetryCmd = [os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
         if sys.platform.startswith("win"):
             write('Using Windows System Settings')

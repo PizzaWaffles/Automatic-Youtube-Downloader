@@ -124,6 +124,28 @@ The file must have one option per line(doesn't matter what order), and must not 
                                         RUN_ONCE
                                         DELAY
 
+#### Example config file for Extended Agent
+
+    API_KEY=[REDACTED]
+    SCHEDULING_MODE=DELAY
+    SCHEDULING_MODE_VALUE=30
+    NUM_VIDEOS=3
+    DESTINATION_FOLDER=F:/Plex/Youtube/
+    DESTINATION_FORMAT=%NAME
+    FILE_FORMAT=%NAME - %UPLOAD_DATE - %TITLE
+    VIDEO_FORMAT=1080p
+    
+#### Example config for ASS Agent
+
+    API_KEY=[REDACTED]
+    SCHEDULING_MODE=DELAY
+    SCHEDULING_MODE_VALUE=30
+    NUM_VIDEOS=3
+    DESTINATION_FOLDER=F:/Plex/Youtube/
+    DESTINATION_FORMAT=%NAME [Youtube-%CHANNEL_ID]
+    FILE_FORMAT=%TITLE - [%VIDEO_ID]
+    VIDEO_FORMAT=best
+
 ## Filters
 
 With the custom filters you can cherry pick which videos you would like to download automatically, there is 2 modes for the filters to work either "allow-only" or "deny-only" mode

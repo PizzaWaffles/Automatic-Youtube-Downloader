@@ -511,7 +511,7 @@ def main(my_sch):
                        # usable_format_code_audio = 'bestaudio'
                         containsWebmContent = False
 
-                        usable_format_code_audio = 'bestaudio[ext=m4a]/bestaudio'
+                        usable_format_code_audio = '(bestaudio[ext=m4a]/bestaudio)'
                         usable_format_code_video = '(bestvideo[vcodec^=av01][height>=2160][fps>30]/' \
                                               'bestvideo[vcodec=vp9.2][height>=2160][fps>30]/' \
                                               'bestvideo[vcodec=vp9][height>=2160][fps>30]/' \
@@ -649,28 +649,26 @@ def main(my_sch):
                                 logVariables()
 
                     if not skip_move:
+                        destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
+                        destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
+
                         subscription_source_dir = 'Download/' + uploader + '/'
-                        subscription_destination_dir = os.path.join(DESTINATION_FOLDER, uploader)
                         logging.debug("subscription_source_dir is %s" % subscription_source_dir)
-                        logging.debug("subscription_destination_dir is %s" % subscription_destination_dir)
+                        logging.debug("subscription_destination_dir is %s" % destinationDir)
 
-                        # destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
-                        # destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
-
-                        if not os.path.exists(DESTINATION_FOLDER + uploader):
+                        if not os.path.exists(destinationDir):
                             logging.info(
-                                "Creating uploader destination directory for %s" % subscription_destination_dir)
-                            os.makedirs(subscription_destination_dir)
+                                "Creating uploader destination directory for %s" % destinationDir)
+                            os.makedirs(destinationDir)
                         try:
                             logging.info("Now moving content from %s to %s" % (
-                            subscription_source_dir, subscription_destination_dir))
+                            subscription_source_dir, destinationDir))
 
                             for filename in os.listdir(subscription_source_dir):
                                 logging.info("Checking file %s" % filename)
                                 source_to_get = os.path.join(subscription_source_dir, filename)
-                                where_to_place = subscription_destination_dir
-                                logging.info("Moving file %s to %s" % (source_to_get, where_to_place))
-                                safecopy(source_to_get, where_to_place)
+                                logging.info("Moving file %s to %s" % (source_to_get, destinationDir))
+                                safecopy(source_to_get, destinationDir)
                                 # shutil.move(os.path.join(subscription_source_dir, filename), subscription_destination_dir)
 
                             shutil.rmtree(subscription_source_dir, ignore_errors=True)

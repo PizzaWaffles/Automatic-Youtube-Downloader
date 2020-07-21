@@ -1,7 +1,7 @@
 import sys
 import subprocess
 import os
-
+import datetime
 
 def check_dependencies():
     try:
@@ -35,6 +35,9 @@ def check_dependencies():
 
 
 if __name__ == "__main__":
+    print("\nStart")
+    now = datetime.datetime.now()
+    now.strftime('%m-%d-%y %H:%M:%S')
     if not os.path.isfile('poetry.lock'):
         response = input("You need to update your dependencies to continue. Update? (y/n) ")
         if response.strip().lower() == 'y':

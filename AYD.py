@@ -446,7 +446,7 @@ def main(my_sch):
     for i in range(0, len(xmltitle)):  # for every channel
         skip_download = False
         uploader = xmltitle[i]
-        # print(uploader)
+        print("Getting videos for:" + str(uploader))
         try:
             url_data = urlopen(xmlurl[i], )
             url_data = url_data.read()

@@ -2,7 +2,9 @@
 
 # YouTube Downloader
 
-This python program periodically checks youtube for new videos in a users subscription feed. It will then move it to a designated folder with a video thumbnail and a channel poster. 
+This python program periodically checks youtube for new videos in a users subscription feed. 
+It will then move it to a designated folder with a video thumbnail and a channel poster. 
+It now also supports playlists and full channel downloads
 
 This was designed to work with Plex and this [plugin](https://github.com/ZeroQI/YouTube-Agent.bundle) and this [scanner](https://github.com/ZeroQI/Absolute-Series-Scanner)
 
@@ -80,7 +82,8 @@ So if i wanted 4k videos the line would look line
 `VIDEO_FORMAT=2160p`
 
 #### To version 2.0
-Lots of changes here, added a flask web frontend, tray icon, and threading to try to restart threads that died
+Lots of changes here, added a flask web frontend, tray icon, playlist downloading, full channel download, 
+and threading to try to restart threads that died
 
 The running of the version is different, before you could set the scheduling mode to ONCE and have crontab run it on a set schedule
 this is no longer necessary the program has a scheduler bultin, so now the schedule modes are time of day and delay
@@ -109,7 +112,7 @@ The file must have one option per line(doesn't matter what order), and must not 
 
     API_KEY                     Your API key
     SCHEDULING_MODE_VALUE       If set in time mode this is what hour of the day to start, If set in delay mode this is the delay in seconds
-    NUM_VIDEOS                  How many videos to download at a time (max 15)
+    NUM_VIDEOS                  How many videos to download at a time (max 15 or 0 to download entire channel)
     DESTINATION_FOLDER          The folder to move channels into
     VIDEO_FORMAT                The video quality to download at (default=248+251/best)
     FILE_FORMAT                 Format for files
@@ -178,6 +181,8 @@ Will no longer add features, but will fix bugs as they arise
 I lied due to Covid I've had some time and added some features in V2.0
 
 TODO:
+* ~~Playlist download~~
+* ~~Full Channel download~~
 * Better setup method
 * More testing
 * Add logs to web frontend

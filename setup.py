@@ -29,11 +29,12 @@ VIDEO_QUALITY_DICT = {
     '1080p HD': '248+251/299+140/137+140/best',
     '1440p QHD': '271+251/best',
     '2160p 4k': '313+251/best',
-    '4320p 8k': '272+251/best'
+    '4320p 8k': '272+251/best',
+    'The Best Available': 'best'
 }
 VIDEO_QUALITY_LIST = [
-    ['480p', '720p', '1080p HD', '1440p QHD', '2160p 4k', '4320p 8k'],
-    ['244+251/best', '247+251/best', '248+251/299+140/137+140/best', '271+251/best', '313+251/best', '272+251/best']
+    ['480p', '720p', '1080p HD', '1440p QHD', '2160p 4k', '4320p 8k', 'The Best Available'],
+    ['244+251/best', '247+251/best', '248+251/299+140/137+140/best', '271+251/best', '313+251/best', '272+251/best', 'best']
 ]
 
 CONFIGURATIONS_HUMAN_READABLE = {
@@ -46,6 +47,9 @@ CONFIGURATIONS_HUMAN_READABLE = {
     'FILE_FORMAT': 'The naming convention to use for files(see GitHub for more info)',
     'VIDEO_FORMAT': 'Quality setting'
 }
+
+DATA_FOLDER_LOCATION = "Automatic-Youtube-Downloader/data/"
+LOG_FOLDER_LOCATION = "Automatic-Youtube-Downloader/logs/"
 
 init()  # start colorizer
 RED = Fore.RED
@@ -76,38 +80,34 @@ def get_input(msg, color=LIGHT_BLUE):
 
 
 def install_dependencies():
-    logging.debug("install_dependencies function called")
     try:
-        write("Checking Dependencies....", BLUE)
+        print("Checking Dependencies....")
         homeDirectory = os.getcwd()
         pythonPath = sys.executable
-        write("Python Path: " + pythonPath)
-        getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "get_poetry.py"), "--version", "0.12.11"]
-        runPoetryCmd = [os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
+        print("Python Path: " + pythonPath)
+        getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "Automatic-Youtube-Downloader", "poetry", "get_poetry.py"), "--version", "0.12.11"]
+        runPoetryCmd = [os.path.join(homeDirectory, "Automatic-Youtube-Downloader", "poetry", "bin", "poetry"), "update"]
         if sys.platform.startswith("win"):
-            write('Using Windows System Settings')
-            subprocess.run(getPoetryCmd, shell=True)
-            subprocess.run(runPoetryCmd, shell=True)
+            print('Using Windows System Settings')
+            subprocess.run(getPoetryCmd, shell=True, cwd=os.path.join(homeDirectory, "Automatic-Youtube-Downloader"))
+            subprocess.run(runPoetryCmd, shell=True, cwd=os.path.join(homeDirectory, "Automatic-Youtube-Downloader"))
         else:
             sys.stdout.flush()
-            proc = subprocess.call(getPoetryCmd)
+            proc = subprocess.call(getPoetryCmd, cwd=os.path.join(homeDirectory, "Automatic-Youtube-Downloader"))
             if proc > 0:
-                write("An error occurred with downloading poetry", RED)
+                print("An error occurred with downloading poetry")
                 exit(1)
 
             sys.stdout.flush()
-            proc = subprocess.call(runPoetryCmd)
+            proc = subprocess.call(runPoetryCmd, cwd=os.path.join(homeDirectory, "Automatic-Youtube-Downloader"))
             if proc > 0:
-                write("An error occurred with running poetry", RED)
+                print("An error occurred with running poetry")
                 exit(1)
-
     except Exception as e:
-        logging.error("Exception occurred %s" % str(e))
-        logging.error(traceback.format_exc())
-        write(str(e))
-        write("An error occured please check logs and try again", RED)
+        print(str(e))
+        print("An error occurred updating dependencies, try again")
         exit()
-    write("Complete.\n", GREEN)
+    print("Complete.\n")
 
 
 def format_youtube_data():
@@ -119,7 +119,7 @@ def format_youtube_data():
         write("\n\nSetting up Youtube configs")
         write("Please goto https://www.youtube.com/subscription_manager")
         write("On the bottom of the page click 'Export Subscriptions'")
-        write("Put that file in the data directory so it looks like data/" + subFile)
+        write("Put that file in the data directory so it looks like " + DATA_FOLDER_LOCATION + subFile)
         if not TESTING:
             get_input("Click enter to continue.....")
 
@@ -130,7 +130,7 @@ def format_youtube_data():
         else:
             write("File Not Found!! Please make sure you have it in the correct directory and its named correctly", RED)
             logging.warning(subFile + " was NOT found")
-            logging.debug("data folder contents:\n" + str(glob.glob("data/*")))
+            logging.debug("data folder contents:\n" + str(glob.glob(DATA_FOLDER_LOCATION + "*")))
 
 
 def get_API_key_config(cFile):
@@ -179,14 +179,13 @@ def get_API_key():
             write("Sorry that key did not work!!! Make sure you copied the key correctly", RED)
 
 
-def channel_selection(dataFile, inputFile="data/subscription_manager.xml", titleList=None, idList=None):
+def channel_selection(dataFile, inputFile=DATA_FOLDER_LOCATION + "subscription_manager.xml", titleList=None, idList=None):
     logging.debug("channel_selection function called")
     if titleList is not None:
         inputFile = None
     else:
         titleList = []
         idList = []
-
 
     import listparser as lp
     logging.debug("Channel_selection started")
@@ -344,8 +343,7 @@ def setup_config(api_key, configFile):
             write("\nHow would you like the program to run? (x being any number you want)", LIGHT_BLUE)
             selection = get_input("""
         1. Once at startup and then every X minutes
-        2. Every day at a specific time
-        3. Once and then exit (for Cron, etc)""", None)
+        2. Every day at a specific time""", None)
 
             logging.info("User selected schedule option %s" % selection)
             if selection == '1':
@@ -385,11 +383,10 @@ def setup_config(api_key, configFile):
 
         loop = True
         while (loop):
-            write("\nHow many videos for each channel do you want to download initially? (max 15)\n"
+            write("\nHow many videos for each channel do you want to download initially? (max 15 or 0 for full channel download)\n"
                   "Note that is a automatic video downloader meaning it will download new videos "
-                  "once they are posted. \nThis is not meant to download am entire channel (at least I "
-                  "have not implemented this function if you would like it please request it on GitHub)\n")
-            response = get_input("Please enter a number between 1-15")
+                  "once they are posted. \n")
+            response = get_input("Please enter a number between 0-15")
             if response.isdigit():
                 logging.info("User selected %s videos to be downloaded per channel" % response)
                 f.write("NUM_VIDEOS=" + response + '\n')
@@ -398,7 +395,7 @@ def setup_config(api_key, configFile):
                 write("\nInvalid!!! Please try again.", RED)
 
         loop = True
-        while (loop):
+        while loop:
             response = get_input("\nWhere would you like your videos moved? (Usually a Plex library)\n"
                                  "Make sure you enter the entire address (ex. 'G:\\Plex\\Youtube\\')\n")
 
@@ -619,15 +616,15 @@ def get_sub_list(api_key, configFile=None):
 
 
 def main(configFile, dataFile, skipDep):
-    if not os.path.exists('data/'):
+    if not os.path.exists(DATA_FOLDER_LOCATION):
         logging.info("Data directory not found, creating...")
-        os.makedirs('data/')
+        os.makedirs(DATA_FOLDER_LOCATION)
     if not os.path.exists('Download/'):
         logging.info("Download directory not found, creating...")
         os.makedirs('Download/')
-    if not os.path.isfile('data/log.txt'):
+    if not os.path.isfile(DATA_FOLDER_LOCATION + 'log.txt'):
         logging.info("log.txt not found, creating...")
-        open('data/log.txt', 'a').close()
+        open(DATA_FOLDER_LOCATION + 'log.txt', 'a').close()
 
     loop = True
     while loop:
@@ -650,7 +647,7 @@ def main(configFile, dataFile, skipDep):
             titleList, idList = get_sub_list(api_key)
             if titleList is None:
                 format_youtube_data()
-                channel_selection(dataFile, "data/subscription_manager.xml")
+                channel_selection(dataFile, DATA_FOLDER_LOCATION + "subscription_manager.xml")
             else:
                 channel_selection(dataFile, "", titleList, idList)
             setup_config(api_key, configFile)
@@ -662,7 +659,7 @@ def main(configFile, dataFile, skipDep):
             titleList, idList = get_sub_list(api_key, configFile)
             if titleList is None:
                 format_youtube_data()
-                channel_selection(dataFile, "data/subscription_manager.xml")
+                channel_selection(dataFile, DATA_FOLDER_LOCATION + "subscription_manager.xml")
             else:
                 channel_selection(dataFile, "", titleList, idList)
         elif menuSelection == "3":
@@ -682,13 +679,13 @@ def main(configFile, dataFile, skipDep):
 
 
 if __name__ == "__main__":
-    if not os.path.exists('logs/'):
+    if not os.path.exists(LOG_FOLDER_LOCATION):
         logging.info("logs directory not found, creating...")
-        os.makedirs('logs/')
-    if not os.path.isfile('logs/setup.log'):
-        logging.info("logs/setup.log not found, creating...")
-        open('logs/setup.log', 'a').close()
-    logging.basicConfig(filename='logs/setup.log', level=logging.DEBUG, format='%(asctime)s %(message)s',
+        os.makedirs(LOG_FOLDER_LOCATION)
+    if not os.path.isfile(LOG_FOLDER_LOCATION + 'setup.log'):
+        logging.info(LOG_FOLDER_LOCATION + "setup.log not found, creating...")
+        open(LOG_FOLDER_LOCATION + 'setup.log', 'a').close()
+    logging.basicConfig(filename=LOG_FOLDER_LOCATION + 'setup.log', level=logging.DEBUG, format='%(asctime)s %(message)s',
         datefmt='%m/%d/%Y %I:%M:%S %p')
 
     logging.info("Program setup.py started")
@@ -701,20 +698,20 @@ if __name__ == "__main__":
             opts, args = getopt.getopt(sys.argv[1:], "hc:d:s", ["config=", "data=", "skip"])
         except getopt.GetoptError:
             write('\n\nmain.py -c <config file> -d <youtube data file> -s\n\n'
-                  '   -c,--config: config file optional, if not provided will default to data/config\n'
+                  '   -c,--config: config file optional, if not provided will default to ' + DATA_FOLDER_LOCATION + 'config\n'
                   '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
-                  '       main.py -c "config1.txt config2 data/config3"\n'
-                  '   -d,--data: data file optional, if not provided will default to data/youtubeData.xml\n'
+                  '       main.py -c "config1.txt config2 ' + DATA_FOLDER_LOCATION + 'config3"\n'
+                  '   -d,--data: data file optional, if not provided will default to ' + DATA_FOLDER_LOCATION + 'youtubeData.xml\n'
                   '       This is the file output of channel names and urls.\n'
                   '   -s,--skip: flag to skip dependency check\n\n')
             exit(2)
         for opt, arg in opts:
             if opt == '-h':
                 write('\n\nmain.py -c <config file> -d <youtube data file> -s\n\n'
-                      '   -c,--config: config file optional, if not provided will default to data/config\n'
+                      '   -c,--config: config file optional, if not provided will default to ' + DATA_FOLDER_LOCATION + 'config\n'
                       '       Multiple config files supported just separate with a space and surround with quotes ex.\n'
-                      '       main.py -c "config1.txt config2 data/config3"\n'
-                      '   -d,--data: data file optional, if not provided will default to data/youtubeData.xml\n'
+                      '       main.py -c "config1.txt config2 ' + DATA_FOLDER_LOCATION + 'config3"\n'
+                      '   -d,--data: data file optional, if not provided will default to ' + DATA_FOLDER_LOCATION + 'youtubeData.xml\n'
                       '       This is the file output of channel names and urls.\n'
                       '   -s,--skip: flag to skip dependency check\n\n')
                 exit(2)
@@ -727,23 +724,22 @@ if __name__ == "__main__":
                 write("--Skipping Dependency check")
 
         if configFileInput == '':
-            configFile = 'data/config'
+            configFile = DATA_FOLDER_LOCATION + 'config'
             # write('--Using data/config')
         else:
             configFile = configFileInput
 
         if dataFileInput == '':
-            dataFile = 'data/youtubeData.xml'
+            dataFile = DATA_FOLDER_LOCATION + 'youtubeData.xml'
         else:
             dataFile = dataFileInput
     else:
         # No arguments
-        configFile = 'data/config'
-        dataFile = 'data/youtubeData.xml'
+        configFile = DATA_FOLDER_LOCATION + 'config'
+        dataFile = DATA_FOLDER_LOCATION + 'youtubeData.xml'
 
     if dataFileInput == '':
-        dataFileInput = 'data/youtubeData.xml'
-        # write('--Using data/youtubeData.xml')
+        dataFileInput = DATA_FOLDER_LOCATION + 'youtubeData.xml'
     else:
         dataFile = dataFileInput
 

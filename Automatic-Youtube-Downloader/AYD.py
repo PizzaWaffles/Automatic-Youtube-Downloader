@@ -3,14 +3,11 @@ from bs4 import BeautifulSoup as bs
 import youtube_dl
 import os, shutil
 import string
-import glob
 import traceback
 import json
-# from distutils.dir_util import copy_tree
 from datetime import datetime
 import time
 import sys, getopt
-from pprint import pprint
 import logging
 import re
 import fnmatch
@@ -18,8 +15,6 @@ import subprocess
 from colorama import init
 from colorama import Fore, Back, Style
 from tendo import singleton
-from sys import platform
-import multiprocessing
 
 # Support for both python 2 and 3
 if sys.version_info[0] == 3:
@@ -46,7 +41,7 @@ YOUTUBE_XML_FILE = "data/youtubeData.xml"
 # Constant
 FILTER_FOLDER = "data/filters/"
 CURRENT_STATUS = "Starting"
-#PARENT_CONNECTION
+PARENT_CONNECTION = None
 
 # Colorizer constants
 RED = Fore.RED
@@ -188,13 +183,6 @@ def check_dependencies():
     write("Complete.\n", GREEN)
 
 
-def parentCode(code):
-    if code.strip() == "KILLAYD":
-        print("Got request from parent to exit")
-        logging.debug("Got request from parent to exit...")
-        exit(1)
-
-
 def logVariables():
     dicGlobal = globals()
     logging.error("-------Global Vars------")
@@ -223,40 +211,41 @@ def get_icons(channel, chid, overwrite=False):
     else:
         for j in range(0, len(channel)):
             if (not chid[j] in downloaded) or overwrite:
-                destinationDir = os.path.join('Download', channel[j])
-                if not os.path.exists(destinationDir):
-                    logging.info("destination directory was not found for %s" % destinationDir)
-                    os.makedirs(destinationDir)
-                try:
-                    logging.info("Downloading new icon for poster: %s | %s" % (channel[j], chid[j]))
-                    url_data = urlopen(
-                        'https://www.googleapis.com/youtube/v3/channels?part=snippet&id='
-                        + chid[j] + '&fields=items%2Fsnippet%2Fthumbnails&key=' + API_KEY)
+                if chid[j][:2] != "PL":
+                    destinationDir = os.path.join('Download', channel[j])
+                    if not os.path.exists(destinationDir):
+                        logging.info("destination directory was not found for %s" % destinationDir)
+                        os.makedirs(destinationDir)
+                    try:
+                        logging.info("Downloading new icon for poster: %s | %s" % (channel[j], chid[j]))
+                        url_data = urlopen(
+                            'https://www.googleapis.com/youtube/v3/channels?part=snippet&id='
+                            + chid[j] + '&fields=items%2Fsnippet%2Fthumbnails&key=' + API_KEY)
 
-                    logging.info("icon url is [not recorded due to API key being included]")
+                        logging.info("icon url is [not recorded due to API key being included]")
 
-                    data = url_data.read()
-                    data = json.loads(data.decode('utf-8'))
-                    icon_url = data['items'][0]['snippet']['thumbnails']['high']['url']
-                    with open(os.path.join(destinationDir, "poster.jpg"), 'wb') as f:
-                        f.write(request.urlopen(icon_url).read())
+                        data = url_data.read()
+                        data = json.loads(data.decode('utf-8'))
+                        icon_url = data['items'][0]['snippet']['thumbnails']['high']['url']
+                        with open(os.path.join(destinationDir, "poster.jpg"), 'wb') as f:
+                            f.write(request.urlopen(icon_url).read())
 
-                    if not os.path.isdir(os.path.join(DESTINATION_FOLDER, channel[j])):
-                        os.mkdir(os.path.join(DESTINATION_FOLDER, channel[j]))
+                        if not os.path.isdir(os.path.join(DESTINATION_FOLDER, channel[j])):
+                            os.mkdir(os.path.join(DESTINATION_FOLDER, channel[j]))
 
-                    # Move file
-                    safecopy(os.path.join(destinationDir, "poster.jpg"),
-                             os.path.join(DESTINATION_FOLDER, channel[j], 'poster.jpg'))
-                    shutil.rmtree(os.path.dirname(destinationDir))
+                        # Move file
+                        safecopy(os.path.join(destinationDir, "poster.jpg"),
+                                 os.path.join(DESTINATION_FOLDER, channel[j], 'poster.jpg'))
+                        shutil.rmtree(os.path.dirname(destinationDir))
 
-                    with open('data/icon_log.txt', 'a+') as f:
-                        f.write(chid[j] + '\n')
-                except Exception as e:
-                    print(str(e))
-                    print(Fore.RED + "An error occurred downloading icons, Please check logs" + Style.RESET_ALL)
-                    logging.error(str(e))
-                    logging.error(traceback.format_exc())
-                    logVariables()
+                        with open('data/icon_log.txt', 'a+') as f:
+                            f.write(chid[j] + '\n')
+                    except Exception as e:
+                        print(str(e))
+                        print(Fore.RED + "An error occurred downloading icons, Please check logs" + Style.RESET_ALL)
+                        logging.error(str(e))
+                        logging.error(traceback.format_exc())
+                        logVariables()
     write("Complete.", GREEN)
 
 
@@ -421,6 +410,174 @@ def slugify(value):
     return value
 
 
+def downloadEntireChannel(channelTitle, channelID, playlist=False):
+    global NUM_VIDEOS
+    global DESTINATION_FOLDER
+    global API_KEY
+    global FORMAT
+    global FILE_FORMAT
+    global SCHEDULING_MODE
+    global SCHEDULING_MODE_VALUE
+    global YOUTUBE_XML_FILE
+    global PARENT_CONNECTION
+
+    logFileName = "data/log.txt"
+    fullDataLogFileName = "data/fullDataLog.txt"  # TODO
+
+    if PARENT_CONNECTION is not None:
+        PARENT_CONNECTION.send(["MAIN", "Downloading Entire Channel"])
+
+    currentChannelId = str(channelID)
+    currentChannelName = str(channelTitle)
+
+    write("Downloading Entire Channel - " + currentChannelName + "  |  " + currentChannelId)
+    logging.info("Downloading Entire Channel - " + currentChannelName + "  |  " + currentChannelId)
+
+    # Get format codes to use
+    usable_format_code_audio = '(bestaudio[ext=m4a]/bestaudio)'
+    usable_format_code_video = '(bestvideo[vcodec^=av01][height>=2160][fps>30]/' \
+                               'bestvideo[vcodec=vp9.2][height>=2160][fps>30]/' \
+                               'bestvideo[vcodec=vp9][height>=2160][fps>30]/' \
+                               'bestvideo[vcodec^=av01][height>=2160]/' \
+                               'bestvideo[vcodec=vp9.2][height>=2160]/' \
+                               'bestvideo[vcodec=vp9][height>=2160]/' \
+                               'bestvideo[height>=2160]/' \
+                               'bestvideo[vcodec^=av01][height>=1440][fps>30]/' \
+                               'bestvideo[vcodec=vp9.2][height>=1440][fps>30]/' \
+                               'bestvideo[vcodec=vp9][height>=1440][fps>30]/' \
+                               'bestvideo[vcodec^=av01][height>=1440]/' \
+                               'bestvideo[vcodec=vp9.2][height>=1440]/' \
+                               'bestvideo[vcodec=vp9][height>=1440]/' \
+                               'bestvideo[height>=1440]/' \
+                               'bestvideo[vcodec^=av01][height>=1080][fps>30]/' \
+                               'bestvideo[vcodec=vp9.2][height>=1080][fps>30]/' \
+                               'bestvideo[vcodec=vp9][height>=1080][fps>30]/' \
+                               'bestvideo[vcodec^=av01][height>=1080]/' \
+                               'bestvideo[vcodec=vp9.2][height>=1080]/' \
+                               'bestvideo[vcodec=vp9][height>=1080]/' \
+                               'bestvideo[height>=1080]/' \
+                               'bestvideo[vcodec^=av01][height>=720][fps>30]/' \
+                               'bestvideo[vcodec=vp9.2][height>=720][fps>30]/' \
+                               'bestvideo[vcodec=vp9][height>=720][fps>30]/' \
+                               'bestvideo[vcodec^=av01][height>=720]/' \
+                               'bestvideo[vcodec=vp9.2][height>=720]/' \
+                               'bestvideo[vcodec=vp9][height>=720]/' \
+                               'bestvideo[height>=720]/' \
+                               'bestvideo)'
+
+    #filename_format = parseFormat(FILE_FORMAT, name=currentChannelName, date="%(release_date)s",
+    #    title="%(title)s", chID=currentChannelId, id="%(id)s")
+    filename_format = parseFormat(FILE_FORMAT, name=currentChannelName, date="%(upload_date)s",
+       title="%(title)s", chID=currentChannelId, id="%(id)s")
+
+    if os.name == 'nt':  # if windows use supplied ffmpeg
+        ydl_opts = {
+            'outtmpl': os.path.join('Download', currentChannelName, filename_format + '.%(ext)s'),
+            # need to put channelid in here because what youtube-dl gives may be incorrect
+            # 'simulate': 'true',
+            'writethumbnail': 'true',
+            'forcetitle': 'true',
+            'ffmpeg_location': './ffmpeg/bin/',
+            'ignoreerrors': 'true',
+            'format': usable_format_code_video + "+" + usable_format_code_audio + '/best',
+            'nooverwrites': 'true',
+            'writeinfojson': 'true'
+        }
+    else:
+        # Linux/Unix
+        ydl_opts = {
+            'outtmpl': os.path.join('Download', currentChannelName, filename_format + '.%(ext)s'),
+            'writethumbnail': 'true',
+            'forcetitle': 'true',
+            'ignoreerrors': 'true',
+            'format': usable_format_code_video + "+" + usable_format_code_audio + '/best',
+            'nooverwrites': 'true',
+            'writeinfojson': 'true'
+        }
+    try:
+        skip_move = False
+        logging.info("Beginning download:" + currentChannelName + "  |  " + currentChannelId)
+        logging.info(str(ydl_opts) + "\n\n")
+        foundPartial = False
+        while True:
+            videoIdList = []
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                if playlist:
+                    url = currentChannelId
+                else:
+                    url = "https://www.youtube.com/channel/" + currentChannelId
+                ydl.download([url])
+
+            files = os.listdir(os.path.join('Download', currentChannelName))
+            for file in files:
+                if file.find(".info.json") is not -1:
+                    with open(os.path.join('Download', currentChannelName, file), 'r') as f:
+                        d = json.load(f)
+                        videoIdList.append(d["display_id"])
+                elif file.find(".part") is not -1:
+                    logging.info("Found .part file, will be re-running channel download")
+                    foundPartial = True
+                    os.remove(file)
+            if not foundPartial:
+                break
+
+        logFile = open(logFileName, 'a')
+        for vID in videoIdList:
+            logFile.write("yt:video:" + vID + ' \n')
+        logFile.close()
+        logging.info("Successfully downloaded" + currentChannelName)
+        write("Success!", GREEN)
+
+    except Exception as e:
+        skip_move = True
+        logging.error(str(e))
+
+        if str(e) == "ERROR: This video is unavailable.":
+            logging.error("This video is not available for download, "
+                          "maybe streaming or just an announcement post.")
+            write("This video is not available for download, "
+                  "maybe streaming or just an announcement post.", RED)
+        else:
+            logging.error("Failed to download video")
+            write("Failed to Download", RED)
+            write(traceback.format_exc(), RED)
+            logging.error(traceback.format_exc())
+            logVariables()
+
+    if not skip_move:
+        subscription_source_dir = 'Download/' + currentChannelName + '/'
+        subscription_destination_dir = os.path.join(DESTINATION_FOLDER, currentChannelName)
+        logging.debug("subscription_source_dir is %s" % subscription_source_dir)
+        logging.debug("subscription_destination_dir is %s" % subscription_destination_dir)
+
+        if not os.path.exists(DESTINATION_FOLDER + currentChannelName):
+            logging.info(
+                "Creating uploader destination directory for %s" % subscription_destination_dir)
+            os.makedirs(subscription_destination_dir)
+        try:
+            logging.info("Now moving content from %s to %s" % (
+                subscription_source_dir, subscription_destination_dir))
+
+            for filename in os.listdir(subscription_source_dir):
+                # Dont copy json file
+                if filename.find(".info.json") is -1:
+                    logging.info("Checking file %s" % filename)
+                    source_to_get = os.path.join(subscription_source_dir, filename)
+                    where_to_place = subscription_destination_dir
+                    logging.info("Moving file %s to %s" % (source_to_get, where_to_place))
+                    safecopy(source_to_get, where_to_place)
+
+            shutil.rmtree(subscription_source_dir, ignore_errors=True)
+
+            #Log downloads
+        except Exception as e:
+            print(str(e))
+            write("An error occured moving file", RED)
+            logging.error(str(e))
+            logging.error(traceback.format_exc())
+            logVariables()
+
+
 def main(my_sch):
     global NUM_VIDEOS
     global DESTINATION_FOLDER
@@ -452,264 +609,272 @@ def main(my_sch):
         xmlurl[i] = data.feeds[
             i].url  # formatted like 'https://www.youtube.com/feeds/videos.xml?channel_id=CHANNELID'
         indexofid = xmlurl[i].find("id=")
-        channelIDlist[i] = xmlurl[i][indexofid + 3:]
+        if indexofid is -1:
+            channelIDlist[i] = xmlurl[i]
+        else:
+            channelIDlist[i] = xmlurl[i][indexofid + 3:]
 
     if my_sch.getNumRuns() == 1:
         get_icons(xmltitle, channelIDlist)
 
     for i in range(0, len(xmltitle)):  # for every channel
-        skip_download = False
-        uploader = xmltitle[i]
-        # print(uploader)
-        try:
-            url_data = urlopen(xmlurl[i], )
-            url_data = url_data.read()
-            xml = bs(url_data.decode('utf-8'), 'html.parser')
-            videoList = xml.find_all('entry')
-        except Exception as e:
-            write("Failed to Download Channel list due to html error, check logs", RED)
-            videoList = ""
-            skip_download = True
-            logging.error(str(e))
-            logging.error(traceback.format_exc())
-            logVariables()
+        if channelIDlist[i][:2] == "PL":
+            downloadEntireChannel(xmltitle[i], channelIDlist[i], True)
+        if NUM_VIDEOS == 0:
+            downloadEntireChannel(xmltitle[i], channelIDlist[i])
+        else:
+            skip_download = False
+            uploader = xmltitle[i]
+            # print(uploader)
+            try:
+                url_data = urlopen(xmlurl[i], )
+                url_data = url_data.read()
+                xml = bs(url_data.decode('utf-8'), 'html.parser')
+                videoList = xml.find_all('entry')
+            except Exception as e:
+                write("Failed to Download Channel list due to html error, check logs", RED)
+                videoList = ""
+                skip_download = True
+                logging.error(str(e))
+                logging.error(traceback.format_exc())
+                logVariables()
 
-        video_download_count = 0
-        for v in videoList:  # for every video in channel
-            # make sure we only download how many we want
-            if (video_download_count < NUM_VIDEOS) and not skip_download:
-                skip_download = False
-                skip_move = False
-                video_download_count += 1
+            video_download_count = 0
+            for v in videoList:  # for every video in channel
+                # make sure we only download how many we want
+                if (video_download_count < NUM_VIDEOS) and not skip_download:
+                    skip_download = False
+                    skip_move = False
+                    video_download_count += 1
 
-                title = str(v.title.string)
-                # title = title.decode("utf-8")
-                # temp = title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
-                title = title.encode("utf-8", errors="ignore").decode('utf-8', 'ignore')
-                escapes = '|'.join([chr(char) for char in range(1, 32)])
-                title = re.sub(escapes, "", title)  # removes all escape characters
-                title = title.replace("-", " ").replace("\\", "").replace("/", "").replace("%", "")
-                title = slugify(title)
+                    title = str(v.title.string)
+                    # title = title.decode("utf-8")
+                    # temp = title.encode("ascii", errors="ignore").decode('utf-8', 'ignore')
+                    title = title.encode("utf-8", errors="ignore").decode('utf-8', 'ignore')
+                    escapes = '|'.join([chr(char) for char in range(1, 32)])
+                    title = re.sub(escapes, "", title)  # removes all escape characters
+                    title = title.replace("-", " ").replace("\\", "").replace("/", "").replace("%", "")
+                    title = slugify(title)
 
-                upload_time = v.published.string.split('T')[1].split('+')[0].replace(':', '')[:-2]
-                upload_date = v.published.string.split('T')[0]
-                upload_date = upload_date + "_" + upload_time
-                url = v.link.get('href')
-                id = v.id.string
-                channelID = str(v.find('yt:channelid').contents[0])
-                # See if we already downloaded this
-                logFile = open(logFileName, 'r')
-                logFileContents = logFile.read()
-                logFile.close()
-                if id in logFileContents:
-                    logging.info("Video Already downloaded for id %s" % id)
-                    # print("Video Already downloaded: " + id)
-                else:
-                    if not my_filters.download_check(title, channelID):
-                        # print("Video Filtered: " + title)
-                        logging.info("Video Filtered: Title:" + title + "ChannelID:" + channelID)
-                        skip_download = True
-                        skip_move = True
+                    upload_time = v.published.string.split('T')[1].split('+')[0].replace(':', '')[:-2]
+                    upload_date = v.published.string.split('T')[0]
+                    upload_date = upload_date + "_" + upload_time
+                    url = v.link.get('href')
+                    id = v.id.string
+                    channelID = str(v.find('yt:channelid').contents[0])
+                    # See if we already downloaded this
+                    logFile = open(logFileName, 'r')
+                    logFileContents = logFile.read()
+                    logFile.close()
+                    if id in logFileContents:
+                        logging.info("Video Already downloaded for id %s" % id)
+                        # print("Video Already downloaded: " + id)
+                    else:
+                        if not my_filters.download_check(title, channelID):
+                            # print("Video Filtered: " + title)
+                            logging.info("Video Filtered: Title:" + title + "ChannelID:" + channelID)
+                            skip_download = True
+                            skip_move = True
 
-                    filename_format = parseFormat(FILE_FORMAT, uploader, upload_date, title, channelID,
-                        id.replace("yt:video:", ""))
-                    foldername_format = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID,
-                        id.replace("yt:video:", ""))
-                    logging.debug("filename_formatted parsed to %s" % filename_format)
+                        filename_format = parseFormat(FILE_FORMAT, uploader, upload_date, title, channelID,
+                            id.replace("yt:video:", ""))
+                        foldername_format = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID,
+                            id.replace("yt:video:", ""))
+                        logging.debug("filename_formatted parsed to %s" % filename_format)
 
-                    if not skip_download:
-                        if PARENT_CONNECTION is not None:
-                            PARENT_CONNECTION.send(["MAIN", "Downloading"])
-                        logging.info("Downloading - " + title + "  |  " + id)
-                        logging.info("Channel - " + str(xmltitle[i]) + "  |  " + channelID)
+                        if not skip_download:
+                            if PARENT_CONNECTION is not None:
+                                PARENT_CONNECTION.send(["MAIN", "Downloading"])
+                            logging.info("Downloading - " + title + "  |  " + id)
+                            logging.info("Channel - " + str(xmltitle[i]) + "  |  " + channelID)
 
-                        # Get format codes to use
-                        usable_extension = 'webm'
-                        # usable_format_code_video = 'bestvideo[ext=webm]'
-                        # usable_format_code_audio = 'bestaudio'
-                        containsWebmContent = False
+                            # Get format codes to use
+                            usable_extension = 'webm'
+                            # usable_format_code_video = 'bestvideo[ext=webm]'
+                            # usable_format_code_audio = 'bestaudio'
+                            containsWebmContent = False
 
-                        usable_format_code_audio = '(bestaudio[ext=m4a]/bestaudio)'
-                        usable_format_code_video = '(bestvideo[vcodec^=av01][height>=2160][fps>30]/' \
-                                              'bestvideo[vcodec=vp9.2][height>=2160][fps>30]/' \
-                                              'bestvideo[vcodec=vp9][height>=2160][fps>30]/' \
-                                              'bestvideo[vcodec^=av01][height>=2160]/' \
-                                              'bestvideo[vcodec=vp9.2][height>=2160]/' \
-                                              'bestvideo[vcodec=vp9][height>=2160]/' \
-                                              'bestvideo[height>=2160]/' \
-                                              'bestvideo[vcodec^=av01][height>=1440][fps>30]/' \
-                                              'bestvideo[vcodec=vp9.2][height>=1440][fps>30]/' \
-                                              'bestvideo[vcodec=vp9][height>=1440][fps>30]/' \
-                                              'bestvideo[vcodec^=av01][height>=1440]/' \
-                                              'bestvideo[vcodec=vp9.2][height>=1440]/' \
-                                              'bestvideo[vcodec=vp9][height>=1440]/' \
-                                              'bestvideo[height>=1440]/' \
-                                              'bestvideo[vcodec^=av01][height>=1080][fps>30]/' \
-                                              'bestvideo[vcodec=vp9.2][height>=1080][fps>30]/' \
-                                              'bestvideo[vcodec=vp9][height>=1080][fps>30]/' \
-                                              'bestvideo[vcodec^=av01][height>=1080]/' \
-                                              'bestvideo[vcodec=vp9.2][height>=1080]/' \
-                                              'bestvideo[vcodec=vp9][height>=1080]/' \
-                                              'bestvideo[height>=1080]/' \
-                                              'bestvideo[vcodec^=av01][height>=720][fps>30]/' \
-                                              'bestvideo[vcodec=vp9.2][height>=720][fps>30]/' \
-                                              'bestvideo[vcodec=vp9][height>=720][fps>30]/' \
-                                              'bestvideo[vcodec^=av01][height>=720]/' \
-                                              'bestvideo[vcodec=vp9.2][height>=720]/' \
-                                              'bestvideo[vcodec=vp9][height>=720]/' \
-                                              'bestvideo[height>=720]/' \
-                                              'bestvideo)'
+                            usable_format_code_audio = '(bestaudio[ext=m4a]/bestaudio)'
+                            usable_format_code_video = '(bestvideo[vcodec^=av01][height>=2160][fps>30]/' \
+                                                  'bestvideo[vcodec=vp9.2][height>=2160][fps>30]/' \
+                                                  'bestvideo[vcodec=vp9][height>=2160][fps>30]/' \
+                                                  'bestvideo[vcodec^=av01][height>=2160]/' \
+                                                  'bestvideo[vcodec=vp9.2][height>=2160]/' \
+                                                  'bestvideo[vcodec=vp9][height>=2160]/' \
+                                                  'bestvideo[height>=2160]/' \
+                                                  'bestvideo[vcodec^=av01][height>=1440][fps>30]/' \
+                                                  'bestvideo[vcodec=vp9.2][height>=1440][fps>30]/' \
+                                                  'bestvideo[vcodec=vp9][height>=1440][fps>30]/' \
+                                                  'bestvideo[vcodec^=av01][height>=1440]/' \
+                                                  'bestvideo[vcodec=vp9.2][height>=1440]/' \
+                                                  'bestvideo[vcodec=vp9][height>=1440]/' \
+                                                  'bestvideo[height>=1440]/' \
+                                                  'bestvideo[vcodec^=av01][height>=1080][fps>30]/' \
+                                                  'bestvideo[vcodec=vp9.2][height>=1080][fps>30]/' \
+                                                  'bestvideo[vcodec=vp9][height>=1080][fps>30]/' \
+                                                  'bestvideo[vcodec^=av01][height>=1080]/' \
+                                                  'bestvideo[vcodec=vp9.2][height>=1080]/' \
+                                                  'bestvideo[vcodec=vp9][height>=1080]/' \
+                                                  'bestvideo[height>=1080]/' \
+                                                  'bestvideo[vcodec^=av01][height>=720][fps>30]/' \
+                                                  'bestvideo[vcodec=vp9.2][height>=720][fps>30]/' \
+                                                  'bestvideo[vcodec=vp9][height>=720][fps>30]/' \
+                                                  'bestvideo[vcodec^=av01][height>=720]/' \
+                                                  'bestvideo[vcodec=vp9.2][height>=720]/' \
+                                                  'bestvideo[vcodec=vp9][height>=720]/' \
+                                                  'bestvideo[height>=720]/' \
+                                                  'bestvideo)'
 
-                        try:
-                            if FORMAT.split(" ")[0] == 'best':
-                                logging.info("Skipping getting format codes using granulated option")
-                            else:
-                                with youtube_dl.YoutubeDL() as ydl:
-                                    info_dict = ydl.extract_info(url, download=False)
-                                    formats = info_dict.get("formats", None)
-                                    for f in formats:
-                                        note = f.get('format_note')
-                                        fID = f.get('format_id')
-                                        extension = f.get('ext')
+                            try:
+                                if FORMAT.split(" ")[0] == 'best':
+                                    logging.info("Skipping getting format codes using granulated option")
+                                else:
+                                    with youtube_dl.YoutubeDL() as ydl:
+                                        info_dict = ydl.extract_info(url, download=False)
+                                        formats = info_dict.get("formats", None)
+                                        for f in formats:
+                                            note = f.get('format_note')
+                                            fID = f.get('format_id')
+                                            extension = f.get('ext')
 
-                                        if FORMAT.split(" ")[0] == note:
-                                            usable_format_code_video = fID
-                                            usable_extension = extension
-                                            containsWebmContent = True
-                                            break
+                                            if FORMAT.split(" ")[0] == note:
+                                                usable_format_code_video = fID
+                                                usable_extension = extension
+                                                containsWebmContent = True
+                                                break
 
-                                    for f in formats:
-                                        note = f.get('format_note')
-                                        fID = f.get('format_id')
-                                        extension = f.get('ext')
+                                        for f in formats:
+                                            note = f.get('format_note')
+                                            fID = f.get('format_id')
+                                            extension = f.get('ext')
 
-                                        if usable_extension == extension and note == 'audio only':
-                                            usable_format_code_audio = fID
+                                            if usable_extension == extension and note == 'audio only':
+                                                usable_format_code_audio = fID
 
-                                if not containsWebmContent:
+                                    if not containsWebmContent:
+                                        usable_format_code_video = 'bestvideo'
+                                        usable_format_code_audio = 'bestaudio'
+
+                            except Exception as e:
+                                logging.error(str(e))
+                                if str(e) == "ERROR: This video is unavailable.":
+                                    logging.error("This video is not available for download, "
+                                                  "maybe streaming or just an announcement post.")
+                                    write("This video is not available for download, "
+                                          "maybe streaming or just an announcement post.", RED)
+                                    skip_download = True
+                                    skip_move = True
+                                else:
+                                    logging.error("An error occurred trying to find user requested format,"
+                                                  " reverting to best")
                                     usable_format_code_video = 'bestvideo'
                                     usable_format_code_audio = 'bestaudio'
+                                    write("Couldn't find request format for this video, defaulting to best", RED)
 
-                        except Exception as e:
-                            logging.error(str(e))
-                            if str(e) == "ERROR: This video is unavailable.":
-                                logging.error("This video is not available for download, "
-                                              "maybe streaming or just an announcement post.")
-                                write("This video is not available for download, "
-                                      "maybe streaming or just an announcement post.", RED)
-                                skip_download = True
-                                skip_move = True
+                        if not skip_download:
+                            if os.name == 'nt':  # if windows use supplied ffmpeg
+                                ydl_opts = {
+                                    'outtmpl': os.path.join('Download', uploader, filename_format + '.%(ext)s'),
+                                    # need to put channelid in here because what youtube-dl gives may be incorrect
+                                    # 'simulate': 'true',
+                                    'writethumbnail': 'true',
+                                    'forcetitle': 'true',
+                                    'ffmpeg_location': './ffmpeg/bin/',
+                                    'ignoreerrors': 'true',
+                                    'format': usable_format_code_video + "+" + usable_format_code_audio + '/best'
+                                }
                             else:
-                                logging.error("An error occurred trying to find user requested format,"
-                                              " reverting to best")
-                                usable_format_code_video = 'bestvideo'
-                                usable_format_code_audio = 'bestaudio'
-                                write("Couldn't find request format for this video, defaulting to best", RED)
-
-                    if not skip_download:
-                        if os.name == 'nt':  # if windows use supplied ffmpeg
-                            ydl_opts = {
-                                'outtmpl': os.path.join('Download', uploader, filename_format + '.%(ext)s'),
-                                # need to put channelid in here because what youtube-dl gives may be incorrect
-                                # 'simulate': 'true',
-                                'writethumbnail': 'true',
-                                'forcetitle': 'true',
-                                'ffmpeg_location': './ffmpeg/bin/',
-                                'ignoreerrors': 'true',
-                                'format': usable_format_code_video + "+" + usable_format_code_audio + '/best'
-                            }
-                        else:
-                            # Linux/Unix
-                            ydl_opts = {
-                                'outtmpl': os.path.join('Download', uploader, filename_format + '.%(ext)s'),
-                                'writethumbnail': 'true',
-                                'forcetitle': 'true',
-                                'format': usable_format_code_video + "+" + usable_format_code_audio + '/best'
-                            }
-                        try:
-                            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                                info_dict = ydl.extract_info(url, download=False)
-                                quality = info_dict.get("format", None)
-                                write("Video Quality: " + quality, BLUE)
-                                video_id = info_dict.get("id", None)
-                                video_title = info_dict.get("title", None)
-                                video_date = info_dict.get("upload_date", None)
-                                uploader = info_dict.get("uploader", None)
-                                is_live = info_dict.get("is_live", None)
-                                if 'entries' in info_dict:
-                                    is_live = info_dict['entries'][0]["is_live"]
-                                if not is_live:
-                                    ydl.download([url])
-                                else:
-                                    write("Warning! This video is streaming live, it will be skipped", RED)
-                                    logging.info("Warning! This video is streaming live, it will be skipped")
-                                    skip_move = True
-
-                            if os.path.exists('Download/' + uploader + '/'):
-                                for file in os.listdir('Download/' + uploader + '/'):
-                                    if fnmatch.fnmatch(file, "*" + video_title + "*.part"):
+                                # Linux/Unix
+                                ydl_opts = {
+                                    'outtmpl': os.path.join('Download', uploader, filename_format + '.%(ext)s'),
+                                    'writethumbnail': 'true',
+                                    'forcetitle': 'true',
+                                    'format': usable_format_code_video + "+" + usable_format_code_audio + '/best'
+                                }
+                            try:
+                                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                                    info_dict = ydl.extract_info(url, download=False)
+                                    quality = info_dict.get("format", None)
+                                    write("Video Quality: " + quality, BLUE)
+                                    video_id = info_dict.get("id", None)
+                                    video_title = info_dict.get("title", None)
+                                    video_date = info_dict.get("upload_date", None)
+                                    uploader = info_dict.get("uploader", None)
+                                    is_live = info_dict.get("is_live", None)
+                                    if 'entries' in info_dict:
+                                        is_live = info_dict['entries'][0]["is_live"]
+                                    if not is_live:
+                                        ydl.download([url])
+                                    else:
+                                        write("Warning! This video is streaming live, it will be skipped", RED)
+                                        logging.info("Warning! This video is streaming live, it will be skipped")
                                         skip_move = True
-                                        write("Failed to Download. Will Retry on next Run.", RED)
-                                        logging.error("Found .part file. Failed to Download. Will Retry next Run.")
 
-                        except Exception as e:
-                            skip_move = True
-                            logging.error(str(e))
+                                if os.path.exists('Download/' + uploader + '/'):
+                                    for file in os.listdir('Download/' + uploader + '/'):
+                                        if fnmatch.fnmatch(file, "*" + video_title + "*.part"):
+                                            skip_move = True
+                                            write("Failed to Download. Will Retry on next Run.", RED)
+                                            logging.error("Found .part file. Failed to Download. Will Retry next Run.")
 
-                            if str(e) == "ERROR: This video is unavailable.":
-                                logging.error("This video is not available for download, "
-                                              "maybe streaming or just an announcement post.")
-                                write("This video is not available for download, "
-                                      "maybe streaming or just an announcement post.", RED)
-                            else:
-                                logging.error("Failed to download video")
-                                write("Failed to Download", RED)
+                            except Exception as e:
+                                skip_move = True
+                                logging.error(str(e))
+
+                                if str(e) == "ERROR: This video is unavailable.":
+                                    logging.error("This video is not available for download, "
+                                                  "maybe streaming or just an announcement post.")
+                                    write("This video is not available for download, "
+                                          "maybe streaming or just an announcement post.", RED)
+                                else:
+                                    logging.error("Failed to download video")
+                                    write("Failed to Download", RED)
+                                    logging.error(traceback.format_exc())
+                                    logVariables()
+
+                        if not skip_move:
+                            subscription_source_dir = 'Download/' + uploader + '/'
+                            subscription_destination_dir = os.path.join(DESTINATION_FOLDER, uploader)
+                            logging.debug("subscription_source_dir is %s" % subscription_source_dir)
+                            logging.debug("subscription_destination_dir is %s" % subscription_destination_dir)
+
+                            # destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
+                            # destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
+
+                            if not os.path.exists(DESTINATION_FOLDER + uploader):
+                                logging.info(
+                                    "Creating uploader destination directory for %s" % subscription_destination_dir)
+                                os.makedirs(subscription_destination_dir)
+                            try:
+                                logging.info("Now moving content from %s to %s" % (
+                                subscription_source_dir, subscription_destination_dir))
+
+                                for filename in os.listdir(subscription_source_dir):
+                                    logging.info("Checking file %s" % filename)
+                                    source_to_get = os.path.join(subscription_source_dir, filename)
+                                    where_to_place = subscription_destination_dir
+                                    logging.info("Moving file %s to %s" % (source_to_get, where_to_place))
+                                    safecopy(source_to_get, where_to_place)
+                                    # shutil.move(os.path.join(subscription_source_dir, filename), subscription_destination_dir)
+
+                                shutil.rmtree(subscription_source_dir, ignore_errors=True)
+                                # shutil.move(videoName, destination + destVideoName)
+                                # shutil.move(thumbName, destination + destThumbName)
+                                # everything was successful so log that we downloaded and moved the video
+                                logFile = open(logFileName, 'a')
+                                logFile.write(id + ' \n')
+                                logFile.close()
+                                logging.info("Successfully downloaded and moved file")
+                                write("Success!", GREEN)
+                            except Exception as e:
+                                print(str(e))
+                                write("An error occured moving file", RED)
+                                logging.error(str(e))
                                 logging.error(traceback.format_exc())
                                 logVariables()
 
-                    if not skip_move:
-                        subscription_source_dir = 'Download/' + uploader + '/'
-                        subscription_destination_dir = os.path.join(DESTINATION_FOLDER, uploader)
-                        logging.debug("subscription_source_dir is %s" % subscription_source_dir)
-                        logging.debug("subscription_destination_dir is %s" % subscription_destination_dir)
-
-                        # destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
-                        # destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
-
-                        if not os.path.exists(DESTINATION_FOLDER + uploader):
-                            logging.info(
-                                "Creating uploader destination directory for %s" % subscription_destination_dir)
-                            os.makedirs(subscription_destination_dir)
-                        try:
-                            logging.info("Now moving content from %s to %s" % (
-                            subscription_source_dir, subscription_destination_dir))
-
-                            for filename in os.listdir(subscription_source_dir):
-                                logging.info("Checking file %s" % filename)
-                                source_to_get = os.path.join(subscription_source_dir, filename)
-                                where_to_place = subscription_destination_dir
-                                logging.info("Moving file %s to %s" % (source_to_get, where_to_place))
-                                safecopy(source_to_get, where_to_place)
-                                # shutil.move(os.path.join(subscription_source_dir, filename), subscription_destination_dir)
-
-                            shutil.rmtree(subscription_source_dir, ignore_errors=True)
-                            # shutil.move(videoName, destination + destVideoName)
-                            # shutil.move(thumbName, destination + destThumbName)
-                            # everything was successful so log that we downloaded and moved the video
-                            logFile = open(logFileName, 'a')
-                            logFile.write(id + ' \n')
-                            logFile.close()
-                            logging.info("Successfully downloaded and moved file")
-                            write("Success!", GREEN)
-                        except Exception as e:
-                            print(str(e))
-                            write("An error occured moving file", RED)
-                            logging.error(str(e))
-                            logging.error(traceback.format_exc())
-                            logVariables()
-
-            skip_download = False
-            skip_move = False
+                skip_download = False
+                skip_move = False
 
     logging.info("Program main.py ended")
     logging.info("============================================================")

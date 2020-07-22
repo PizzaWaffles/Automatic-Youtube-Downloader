@@ -1,12 +1,8 @@
 import subprocess
 import os
 import sys
-from threading import Thread
 import threading
-#from queue import Queue, Empty
 import traceback
-import time
-import signal
 from multiprocessing import Process, Pipe
 import webbrowser
 import time

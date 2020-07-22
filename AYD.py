@@ -14,8 +14,11 @@ import logging
 import re
 import fnmatch
 import subprocess
+from colorama import init
+from colorama import Fore, Back, Style
 from tendo import singleton
 from sys import platform
+import multiprocessing
 
 # Support for both python 2 and 3
 if sys.version_info[0] == 3:
@@ -40,6 +43,8 @@ YOUTUBE_XML_FILE = "data/youtubeData.xml"
 
 # Constant
 FILTER_FOLDER = "data/filters/"
+CURRENT_STATUS = "Starting"
+#PARENT_CONNECTION
 
 # Colorizer constants
 BLACK = 30
@@ -252,20 +257,24 @@ def get_icons(channel, chid, overwrite=False):
                     with open(os.path.join(destinationDir, "poster.jpg"), 'wb') as f:
                         f.write(request.urlopen(icon_url).read())
 
-                    with open('data/icon_log.txt', 'a+') as f:
-                        f.write(chid[j] + '\n')
+                    if not os.path.isdir(os.path.join(DESTINATION_FOLDER, channel[j])):
+                        os.mkdir(os.path.join(DESTINATION_FOLDER, channel[j]))
 
                     # Move file
                     safecopy(os.path.join(destinationDir, "poster.jpg"),
-                             os.path.join(DESTINATION_FOLDER, channel[j]))
+                             os.path.join(DESTINATION_FOLDER, channel[j], 'poster.jpg'))
                     shutil.rmtree(os.path.dirname(destinationDir))
+
+                    with open('data/icon_log.txt', 'a+') as f:
+                        f.write(chid[j] + '\n')
                 except Exception as e:
                     print(str(e))
-                    write("An error occurred downloading icons, Please check logs", RED)
+                    print(Fore.RED + "An error occurred downloading icons, Please check logs" + Style.RESET_ALL)
                     logging.error(str(e))
                     logging.error(traceback.format_exc())
                     logVariables()
     write("Complete.", GREEN)
+
 
 
 # src is directory plus filename
@@ -420,32 +429,10 @@ class scheduling:
                 print()
             else:
                 parentCode(line)'''
-        time.sleep(self.minutes_to_wait * 60)
 
         self.number_of_runs_completed += 1
         self.did_i_just_complete_run = True
         # Now run main
-
-
-class controlPrintDEP:
-    # default to not print anything
-    output = False
-
-    def __init__(self, output=False):
-        self.output = output
-
-    def setOutput(self, output):
-        self.output = output
-
-    def hidePrint(self, override=False):
-        if (not self.output) or override:
-            # Disable printing
-            sys.stdout = open(os.devnull, 'w')
-
-    def showPrint(self, override=False):
-        if self.output or override:
-            # Enable printing
-            sys.stdout = sys.__stdout__
 
 
 def slugify(value):
@@ -467,6 +454,9 @@ def main(runs):
     global SCHEDULING_MODE
     global SCHEDULING_MODE_VALUE
     global YOUTUBE_XML_FILE
+    global PARENT_CONNECTION
+
+    PARENT_CONNECTION.send(["MAIN", "Checking for Videos"])
 
     data = lp.parse(YOUTUBE_XML_FILE)
     logFileName = "data/log.txt"
@@ -551,41 +541,76 @@ def main(runs):
                     logging.debug("filename_formatted parsed to %s" % filename_format)
 
                     if not skip_download:
+                        PARENT_CONNECTION.send(["MAIN", "Downloading"])
                         logging.info("Downloading - " + title + "  |  " + id)
                         logging.info("Channel - " + str(xmltitle[i]) + "  |  " + channelID)
 
                         # Get format codes to use
                         usable_extension = 'webm'
-                        usable_format_code_video = 'bestvideo[ext=webm]'
-                        usable_format_code_audio = 'bestaudio'
+                        # usable_format_code_video = 'bestvideo[ext=webm]'
+                        # usable_format_code_audio = 'bestaudio'
                         containsWebmContent = False
 
+                        usable_format_code_audio = '(bestaudio[ext=m4a]/bestaudio)'
+                        usable_format_code_video = '(bestvideo[vcodec^=av01][height>=2160][fps>30]/' \
+                                                   'bestvideo[vcodec=vp9.2][height>=2160][fps>30]/' \
+                                                   'bestvideo[vcodec=vp9][height>=2160][fps>30]/' \
+                                                   'bestvideo[vcodec^=av01][height>=2160]/' \
+                                                   'bestvideo[vcodec=vp9.2][height>=2160]/' \
+                                                   'bestvideo[vcodec=vp9][height>=2160]/' \
+                                                   'bestvideo[height>=2160]/' \
+                                                   'bestvideo[vcodec^=av01][height>=1440][fps>30]/' \
+                                                   'bestvideo[vcodec=vp9.2][height>=1440][fps>30]/' \
+                                                   'bestvideo[vcodec=vp9][height>=1440][fps>30]/' \
+                                                   'bestvideo[vcodec^=av01][height>=1440]/' \
+                                                   'bestvideo[vcodec=vp9.2][height>=1440]/' \
+                                                   'bestvideo[vcodec=vp9][height>=1440]/' \
+                                                   'bestvideo[height>=1440]/' \
+                                                   'bestvideo[vcodec^=av01][height>=1080][fps>30]/' \
+                                                   'bestvideo[vcodec=vp9.2][height>=1080][fps>30]/' \
+                                                   'bestvideo[vcodec=vp9][height>=1080][fps>30]/' \
+                                                   'bestvideo[vcodec^=av01][height>=1080]/' \
+                                                   'bestvideo[vcodec=vp9.2][height>=1080]/' \
+                                                   'bestvideo[vcodec=vp9][height>=1080]/' \
+                                                   'bestvideo[height>=1080]/' \
+                                                   'bestvideo[vcodec^=av01][height>=720][fps>30]/' \
+                                                   'bestvideo[vcodec=vp9.2][height>=720][fps>30]/' \
+                                                   'bestvideo[vcodec=vp9][height>=720][fps>30]/' \
+                                                   'bestvideo[vcodec^=av01][height>=720]/' \
+                                                   'bestvideo[vcodec=vp9.2][height>=720]/' \
+                                                   'bestvideo[vcodec=vp9][height>=720]/' \
+                                                   'bestvideo[height>=720]/' \
+                                                   'bestvideo)'
+
                         try:
-                            with youtube_dl.YoutubeDL() as ydl:
-                                info_dict = ydl.extract_info(url, download=False)
-                                formats = info_dict.get("formats", None)
-                                for f in formats:
-                                    note = f.get('format_note')
-                                    fID = f.get('format_id')
-                                    extension = f.get('ext')
+                            if FORMAT.split(" ")[0] == 'best':
+                                logging.info("Skipping getting format codes using granulated option")
+                            else:
+                                with youtube_dl.YoutubeDL() as ydl:
+                                    info_dict = ydl.extract_info(url, download=False)
+                                    formats = info_dict.get("formats", None)
+                                    for f in formats:
+                                        note = f.get('format_note')
+                                        fID = f.get('format_id')
+                                        extension = f.get('ext')
 
-                                    if FORMAT.split(" ")[0] == note:
-                                        usable_format_code_video = fID
-                                        usable_extension = extension
-                                        containsWebmContent = True
-                                        break
+                                        if FORMAT.split(" ")[0] == note:
+                                            usable_format_code_video = fID
+                                            usable_extension = extension
+                                            containsWebmContent = True
+                                            break
 
-                                for f in formats:
-                                    note = f.get('format_note')
-                                    fID = f.get('format_id')
-                                    extension = f.get('ext')
+                                    for f in formats:
+                                        note = f.get('format_note')
+                                        fID = f.get('format_id')
+                                        extension = f.get('ext')
 
-                                    if usable_extension == extension and note == 'audio only':
-                                        usable_format_code_audio = fID
+                                        if usable_extension == extension and note == 'audio only':
+                                            usable_format_code_audio = fID
 
-                            if not containsWebmContent:
-                                usable_format_code_video = 'bestvideo'
-                                usable_format_code_audio = 'bestaudio'
+                                if not containsWebmContent:
+                                    usable_format_code_video = 'bestvideo'
+                                    usable_format_code_audio = 'bestaudio'
 
                         except Exception as e:
                             logging.error(str(e))
@@ -611,17 +636,17 @@ def main(runs):
                                 # 'simulate': 'true',
                                 'writethumbnail': 'true',
                                 'forcetitle': 'true',
-                                #'ffmpeg_location': './ffmpeg/bin/',
+                                'ffmpeg_location': './ffmpeg/bin/',
                                 'ignoreerrors': 'true',
-                                'format': usable_format_code_video + "+" + usable_format_code_audio
+                                'format': usable_format_code_video + "+" + usable_format_code_audio + '/best'
                             }
                         else:
-                            # not sure here
+                            # Linux/Unix
                             ydl_opts = {
                                 'outtmpl': os.path.join('Download', uploader, filename_format + '.%(ext)s'),
                                 'writethumbnail': 'true',
                                 'forcetitle': 'true',
-                                'format': usable_format_code_video + "+" + usable_format_code_audio
+                                'format': usable_format_code_video + "+" + usable_format_code_audio + '/best'
                             }
                         try:
                             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -631,7 +656,6 @@ def main(runs):
                                 video_id = info_dict.get("id", None)
                                 video_title = info_dict.get("title", None)
                                 video_date = info_dict.get("upload_date", None)
-                                uploader = info_dict.get("uploader", None)
                                 is_live = info_dict.get("is_live", None)
                                 if 'entries' in info_dict:
                                     is_live = info_dict['entries'][0]["is_live"]
@@ -665,47 +689,34 @@ def main(runs):
                                 logVariables()
 
                     if not skip_move:
-                        subscription_source_dir = os.path.join('Download', uploader)
-                        subscription_destination_dir = os.path.join(DESTINATION_FOLDER, foldername_format)
+                        destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
+                        destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
+
+                        subscription_source_dir = 'Download/' + uploader + '/'
                         logging.debug("subscription_source_dir is %s" % subscription_source_dir)
-                        logging.debug("subscription_destination_dir is %s" % subscription_destination_dir)
+                        logging.debug("subscription_destination_dir is %s" % destinationDir)
 
-                        # destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
-                        # destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
-
-                        if not os.path.exists(subscription_destination_dir):
+                        if not os.path.exists(destinationDir):
                             logging.info(
-                                "Creating uploader destination directory for %s" % subscription_destination_dir)
-                            os.makedirs(subscription_destination_dir)
+                                "Creating uploader destination directory for %s" % destinationDir)
+                            os.makedirs(destinationDir)
                         try:
                             logging.info("Now moving content from %s to %s" % (
-                                subscription_source_dir, subscription_destination_dir))
+                                subscription_source_dir, destinationDir))
 
                             for filename in os.listdir(subscription_source_dir):
                                 logging.info("Checking file %s" % filename)
                                 source_to_get = os.path.join(subscription_source_dir, filename)
-                                where_to_place = subscription_destination_dir
-                                logging.info("Moving file %s to %s" % (source_to_get, where_to_place))
-                                safecopy(source_to_get, where_to_place)
+                                logging.info("Moving file %s to %s" % (source_to_get, destinationDir))
+                                safecopy(source_to_get, destinationDir)
+                                # shutil.move(os.path.join(subscription_source_dir, filename), subscription_destination_dir)
 
                             shutil.rmtree(subscription_source_dir, ignore_errors=True)
                             # shutil.move(videoName, destination + destVideoName)
                             # shutil.move(thumbName, destination + destThumbName)
                             # everything was successful so log that we downloaded and moved the video
-                            imagePath = os.path.join(subscription_destination_dir, filename_format + ".jpg")
                             logFile = open(logFileName, 'a')
                             logFile.write(id + ' \n')
-                            logFile.close()
-                            logFile = open(fullDataLogFileName, 'a')
-                            # ID, Channel Name, Title, Quality, Date, ImagePath
-                            logFile.write(
-                                id.split(':')[2] + '?' +
-                                uploader + '?' +
-                                title + '?' +
-                                quality + '?' +
-                                upload_date + '?' +
-                                imagePath + '\n'
-                            )
                             logFile.close()
                             logging.info("Successfully downloaded and moved file")
                             write("Success!", GREEN)
@@ -724,8 +735,10 @@ def main(runs):
     return ""
 
 
-def start():
+def startAyd(conn, argv):
     global VERBOSE
+    global PARENT_CONNECTION
+    PARENT_CONNECTION = conn
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
     os.chdir(dname)
@@ -733,7 +746,7 @@ def start():
 
     configFileInput = ''
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hvVc", ["config="])
+        opts, args = getopt.getopt(argv, "hvVc", ["config="])
     except getopt.GetoptError:
         print('main.py -c <config file(optional)>\n'
               '   -c: config file optional, if not provided will default to data/config\n'
@@ -752,7 +765,7 @@ def start():
                   '   -V: Run program verbosely in a console window, default is to hide output\n')
             exit()
         elif opt in ("-c", "--config"):
-            configFileInput = arg
+            configFileInput = args[0]
         elif opt == '-v':
             if os.path.isfile('pyproject.toml'):
                 with open("pyproject.toml") as f:
@@ -765,8 +778,9 @@ def start():
         elif opt == '-V':
             VERBOSE = True
 
-    # check if another instance is running
-    me = singleton.SingleInstance()  # will sys.exit(-1) if other instance is running
+    # check if another instance is running, other if running from __main__
+    if conn is None:
+        me = singleton.SingleInstance()  # will sys.exit(-1) if other instance is running
 
     try:
         check_dependencies()
@@ -821,6 +835,8 @@ def start():
             load_configs(configFile)
             main(count)
         count += 1
+        PARENT_CONNECTION.send(["MAIN", "Running, waiting for scheduled time"])
+        sch.run()
 
 
 '''def getParentInput():
@@ -832,4 +848,4 @@ def start():
 
 
 if __name__ == "__main__":
-    start()
+    startAyd(None, sys.argv[1:])

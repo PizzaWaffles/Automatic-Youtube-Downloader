@@ -20,10 +20,10 @@
 					<h1 id="logo"><a href="index.html">AYD</a></h1>
 					<nav id="nav">
 						<ul>
-							<li><a href="index.html">Home</a></li>
-							<li><a href="#">Configurations</a></li>
-							<li><a href="#">Youtube Data</a></li>
-							<li><a href="#">Logs</a></li>
+							<li><a href="{{ url_for('home') }}">Home</a></li>
+							<li><a href="{{ url_for('config') }}">Configurations</a></li>
+							<li><a href="{{ url_for('channels') }}">Youtube Channels</a></li>
+							<li><a href="{{ url_for('logs') }}">Logs</a></li>
 						</ul>
 					</nav>
 				</header>
@@ -32,7 +32,11 @@
 				<div id="main" class="wrapper style1">
 					<div class="container">
 						<header class="major">
-							<h2>Downloader Status: {{downloader_status}}</h2>
+							<div class="place_for_header">
+							<h2>Downloader Status: {{downloader_status}}
+							<a href="" class="icon brands fa-refresh" id="refresh-status">
+								<span class="label">Refresh</span></a></h2>
+							</div>
 						</header>
 
 						<section>
@@ -54,32 +58,6 @@
 						<br>
 						<br>
 						<br>
-						<!-- Image -->
-							<section>
-								<h3>Image</h3>
-								<h4>Fit</h4>
-								<div class="box alt">
-									<div class="row gtr-50 gtr-uniform">
-										<div class="col-12"><span class="image fit"><img src="/static/images/pic07.jpg" alt="" /></span></div>
-										<div class="col-4 col-6-xsmall"><span class="image fit"><img src="/static/images/pic02.jpg" alt="" /></span></div>
-										<div class="col-4 col-6-xsmall"><span class="image fit"><img src="/static/images/pic03.jpg" alt="" /></span></div>
-										<div class="col-4 col-6-xsmall"><span class="image fit"><img src="/static/images/pic04.jpg" alt="" /></span></div>
-										<div class="col-4 col-6-xsmall"><span class="image fit"><img src="/static/images/pic04.jpg" alt="" /></span></div>
-										<div class="col-4 col-6-xsmall"><span class="image fit"><img src="/static/images/pic02.jpg" alt="" /></span></div>
-										<div class="col-4 col-6-xsmall"><span class="image fit"><img src="/static/images/pic03.jpg" alt="" /></span></div>
-										<div class="col-4 col-6-xsmall"><span class="image fit"><img src="/static/images/pic03.jpg" alt="" /></span></div>
-										<div class="col-4 col-6-xsmall"><span class="image fit"><img src="/static/images/pic04.jpg" alt="" /></span></div>
-										<div class="col-4 col-6-xsmall"><span class="image fit"><img src="/static/images/pic02.jpg" alt="" /></span></div>
-										<div class="col-4 col-6-xsmall"><span class="image fit"><img src="/static/images/pic02.jpg" alt="" /></span></div>
-										<div class="col-4 col-6-xsmall"><span class="image fit"><img src="/static/images/pic03.jpg" alt="" /></span></div>
-										<div class="col-4 col-6-xsmall"><span class="image fit"><img src="/static/images/pic04.jpg" alt="" /></span></div>
-									</div>
-								</div>
-
-								<h4>Left &amp; Right</h4>
-								<p><span class="image left"><img src="/static/images/pic08.jpg" alt="" /></span>Fringilla nisl. Donec accumsan interdum nisi, quis tincidunt felis sagittis eget. tempus euismod. Vestibulum ante ipsum primis in faucibus vestibulum. Blandit adipiscing eu felis iaculis volutpat ac adipiscing accumsan eu faucibus. Integer ac pellentesque praesent tincidunt felis sagittis eget. tempus euismod. Vestibulum ante ipsum primis in faucibus vestibulum. Blandit adipiscing eu felis iaculis volutpat ac adipiscing accumsan eu faucibus. Integer ac pellentesque praesent. Donec accumsan interdum nisi, quis tincidunt felis sagittis eget. tempus euismod. Vestibulum ante ipsum primis in faucibus vestibulum. Blandit adipiscing eu felis iaculis volutpat ac adipiscing accumsan eu faucibus. Integer ac pellentesque praesent tincidunt felis sagittis eget. tempus euismod. Vestibulum ante ipsum primis in faucibus vestibulum. Blandit adipiscing eu felis iaculis volutpat ac adipiscing accumsan eu faucibus. Integer ac pellentesque praesent. Cras aliquet accumsan curae accumsan arcu amet egestas placerat odio morbi mi adipiscing col morbi felis faucibus in gravida sollicitudin interdum commodo. Ante aliquam vis iaculis accumsan lorem ipsum dolor sit amet nullam. Cras aliquet accumsan curae accumsan arcu amet egestas placerat odio morbi mi adipiscing col morbi felis faucibus in gravida sollicitudin interdum commodo. Ante aliquam vis iaculis accumsan lorem ipsum dolor sit amet nullam.</p>
-								<p><span class="image right"><img src="/static/images/pic08.jpg" alt="" /></span>Fringilla nisl. Donec accumsan interdum nisi, quis tincidunt felis sagittis eget. tempus euismod. Vestibulum ante ipsum primis in faucibus vestibulum. Blandit adipiscing eu felis iaculis volutpat ac adipiscing accumsan eu faucibus. Integer ac pellentesque praesent tincidunt felis sagittis eget. tempus euismod. Vestibulum ante ipsum primis in faucibus vestibulum. Blandit adipiscing eu felis iaculis volutpat ac adipiscing accumsan eu faucibus. Integer ac pellentesque praesent. Donec accumsan interdum nisi, quis tincidunt felis sagittis eget. tempus euismod. Vestibulum ante ipsum primis in faucibus vestibulum. Blandit adipiscing eu felis iaculis volutpat ac adipiscing accumsan eu faucibus. Integer ac pellentesque praesent tincidunt felis sagittis eget. tempus euismod. Vestibulum ante ipsum primis in faucibus vestibulum. Blandit adipiscing eu felis iaculis volutpat ac adipiscing accumsan eu faucibus. Integer ac pellentesque praesent. Cras aliquet accumsan curae accumsan arcu amet egestas placerat odio morbi mi adipiscing col morbi felis faucibus in gravida sollicitudin interdum commodo. Ante aliquam vis iaculis accumsan lorem ipsum dolor sit amet nullam. Cras aliquet accumsan curae accumsan arcu amet egestas placerat odio morbi mi adipiscing col morbi felis faucibus in gravida sollicitudin interdum commodo. Ante aliquam vis iaculis accumsan lorem ipsum dolor sit amet nullam.</p>
-							</section>
 
 					</div>
 				</div>
@@ -114,7 +92,7 @@
 			<script>
 				function updateListElement() {
 					$.ajax({
-					  url: "/downloaderList",
+					  url: "/downloaderList/",
 					  type: "get",
 					  dataType: "html",
 					  success: function(response) {
@@ -125,9 +103,27 @@
 					  }
 					});
 					// call this function again in 1000ms
-    				setTimeout(updateListElement, 20000);
+    				// setTimeout(updateListElement, 20000);
 				}
 				updateListElement();
+
+				$(document).ready(function() {
+   				$('#refresh-status').click(function() {
+					$.ajax({
+					  url: "/statusLabel/",
+					  type: "get",
+					  dataType: "html",
+					  success: function(response) {
+						$(".place_for_header").replaceWith(response);
+					  },
+					  error: function(xhr) {
+						//Do Something to handle error
+					  }
+					});
+					// call this function again in 1000ms
+    				//setTimeout(updateLabelElement, 20000);
+				});
+				});
 			</script>
 	</body>
 </html>

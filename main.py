@@ -3,10 +3,20 @@ import os
 import sys
 from threading import Thread
 import threading
-from queue import Queue, Empty
+#from queue import Queue, Empty
 import traceback
 import time
 import signal
+from multiprocessing import Process, Pipe
+import webbrowser
+
+# Local imports
+import AYD
+import frontend
+import trayIcon
+
+statusFile = "logs/programStatus.log"
+startedTray = False
 
 
 def check_dependencies():
@@ -44,11 +54,10 @@ def check_dependencies():
     print("Complete.\n")
 
 
-def queueOutput(out, queue, id):
+"""def queueOutput(out, queue, id):
     for line in iter(out.readline, b''):
         queue.put((id + ":").encode() + line)
     out.close()
-
 
 
 def checkQueue(q):
@@ -61,6 +70,7 @@ def checkQueue(q):
     else:  # got line
         #qLock.release()
         return line
+"""
 
 
 class write:
@@ -78,7 +88,40 @@ class write:
             print(s)
 
 
-class myThread(threading.Thread):
+class myProcess:
+    def __init__(self, procFunction, arguments):
+        self._myTarget = procFunction
+        self._myArgs = arguments
+        self._parent_conn, self._child_conn = Pipe()
+        self._p = Process(target=self._myTarget, args=(self._child_conn, self._myArgs))
+        self._hasTerminated = False
+
+    def start(self):
+        if self._hasTerminated:
+            self._parent_conn, self._child_conn = Pipe()
+            self._p = Process(target=self._myTarget, args=(self._child_conn, self._myArgs))
+            self._p.start()
+        elif not self._p.is_alive():
+            self._p.start()
+
+    def proc(self):
+        return self._p
+
+    def conn(self):
+        return self._parent_conn
+
+    def child_conn(self):
+        return self._child_conn
+
+    def terminate(self):
+        if self._p.is_alive():
+            self._parent_conn.close()
+            self._child_conn.close()
+            self._p.terminate()
+            self._hasTerminated = True
+
+
+"""class myThread(threading.Thread):
     def __init__(self, workQueue, workqueueLock, stdoutQueue, cmd, nID):
         super(myThread, self).__init__()
         self.workQueue = workQueue
@@ -133,10 +176,16 @@ class myThread(threading.Thread):
                 return 1
 
         #print(str(id) + ":" + str(self.proc.stderr))
-        #print(str(id) + ":" + str(self.proc.returncode))
+        #print(str(id) + ":" + str(self.proc.returncode))"""
 
 
 def start():
+    global startedTray
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    os.chdir(dname)
+    open(statusFile, 'w').close()       # clear status file
+
     global VERBOSE
     if not os.path.isfile('poetry.lock'):
         response = input("You need to update your dependencies to continue. Update? (y/n) ")
@@ -146,131 +195,72 @@ def start():
             print("Exiting....")
             exit(1)
 
-    pythonPath = sys.executable
-    aydCmd = [pythonPath, os.path.join("./poetry", "bin", "poetry"), "run", "python", "AYD.py"]
-    webCmd = [pythonPath, os.path.join("./poetry", "bin", "poetry"), "run", "python",
-        os.path.join("./flask", "frontend.py")]
-    trayCmd = [pythonPath, os.path.join("./poetry", "bin", "poetry"), "run", "python", "trayIcon.py"]
-
-    if len(sys.argv) > 1:
-        for i in range(1, len(sys.argv)):
-            if sys.argv[i] == '-V':
-                VERBOSE = True
-            aydCmd.append(sys.argv[i])
-
     # while True:
     # TODO Add taskbar icon and menu
     # if sys.platform.startswith("win"):
 
     from tendo import singleton
     # check if another instance is running
-    me = singleton.SingleInstance()  # will sys.exit(-1) if other instance is running
+    #me = singleton.SingleInstance()  # will sys.exit(-1) if other instance is running
 
     # No console window, daemon
     LogFileName = "logs/MainConsole.log"
     MainLogFile = open(LogFileName, 'w+')
 
-    w = write(VERBOSE, MainLogFile)
 
-    workQueue = Queue()
-    workQueueLock = threading.Lock()
-    aydQueue = Queue()
-    webQueue = Queue()
-    trayQueue = Queue()
+    trayProc = myProcess(trayIcon.startTray, "")
+    trayProc.start()
+    aydProc = myProcess(AYD.startAyd, sys.argv[1:])
+    aydProc.start()
+    webProc = myProcess(frontend.startWeb, "")
+    webProc.start()
 
-    #inputQueueLock = threading.Lock()
-
-    w.print("Starting Automatic Youtube Downloader daemon...")
-    # aydThread, aydQueue, aydProc = startThread(aydCmd)
-    aydThread = myThread(workQueue, workQueueLock, aydQueue, aydCmd, "AYD")
-    aydThread.setDaemon(True)
-    aydThread.name = "AYD Thread"
-    aydThread.start()
-    w.print("Complete.")
-
-    w.print("Starting WebUI...")
-    # webThread, webQueue, webProc = startThread(webCmd)
-    webThread = myThread(workQueue, workQueueLock, webQueue, webCmd, "WEB")
-    webThread.setDaemon(True)
-    webThread.name = "WEBUI Thread"
-    webThread.start()
-    w.print("Complete.")
-
-    w.print("Starting TrayIcon...")
-    # trayThread, trayQueue, trayProc = startThread(trayCmd)
-    trayThread = myThread(workQueue, workQueueLock, trayQueue, trayCmd, "TRAY")
-    trayThread.setDaemon(True)
-    trayThread.name = "TRAY Thread"
-    trayThread.start()
-    w.print("Complete.")
+    aydStatus = ""
+    webSite = ""
 
     # Start main loop
     while True:
-        #w.print("Checking queue....")
-        ret = checkQueue(aydQueue)
-        if ret != 0 and ret is not None:
-            ret = ret.decode(sys.stdout.encoding).strip()
-            w.print(ret)
+        if aydProc.conn().poll():
+            recv = aydProc.conn().recv()
+            print("Received from AYD: " + str(recv))
 
-            if ret.split(':')[1] == "KILLAYD":
-                while 1:
-                    if not workQueueLock.acquire(False):  # aquire returns false if queue is locked
-                        workQueue.put(b'AYD:quit')
-                        workQueueLock.release()
-                        break
+            if recv[0] == "MAIN":
+                aydStatus = recv[1]
 
-            if ret.split(':')[1] == "AYDSTATUS":
-                while 1:
-                    if not workQueueLock.acquire(False):  # aquire returns false if queue is locked
-                        if aydThread.isAlive():
-                            webThread.sendData('Running\n')
-                            break
-                        else:
-                            webThread.sendData('Not Running\n')
-                            break
-        ret = checkQueue(webQueue)
-        if ret != 0 and ret is not None:
-            ret = ret.decode(sys.stdout.encoding).strip()
-            w.print(ret)
+        if webProc.conn().poll():
+            recv = webProc.conn().recv()
+            print("Received from WEB: " + str(recv))
 
-            if ret.split(':')[1] == "KILLAYD":
-                while 1:
-                    if not workQueueLock.acquire(False):  # aquire returns false if queue is locked
-                        workQueue.put(b'AYD:quit')
-                        workQueueLock.release()
-                        break
+            # recv in format: TO, MESSAGE
+            if recv[0] == "AYD":
+                if recv[1] == "STATUS":
+                    webProc.conn().send(["WEB", aydStatus])
+                if recv[1] == "STOP":
+                    aydProc.terminate()
+                    aydStatus = "Stopped"
+                if recv[1] == "START":
+                    aydProc.start()
+            if recv[0] == "MAIN":
+                if "SITE:" in recv[1]:
+                    webSite = recv[1].replace("SITE:", "")
 
-            if ret.split(':')[1] == "AYDSTATUS":
-                while 1:
-                    if not workQueueLock.acquire(False):  # aquire returns false if queue is locked
-                        if aydThread.isAlive():
-                            webThread.sendData('Running\n')
-                            break
-                        else:
-                            webThread.sendData('Not Running\n')
-                            break
-        ret = checkQueue(trayQueue)
-        if ret != 0 and ret is not None:
-            ret = ret.decode(sys.stdout.encoding).strip()
-            w.print(ret)
+        if trayProc.conn().poll():
+            recv = trayProc.conn().recv()
+            print("Received from TRAY: " + str(recv))
 
-            if ret.split(':')[1] == "KILLAYD":
-                while 1:
-                    if not workQueueLock.acquire(False):  # aquire returns false if queue is locked
-                        workQueue.put(b'AYD:quit')
-                        workQueueLock.release()
-                        break
+            if recv[1] == "TERMINATE":
+                aydProc.terminate()
+                webProc.terminate()
+                trayProc.terminate()
+                exit(1)
 
-            if ret.split(':')[1] == "AYDSTATUS":
-                while 1:
-                    if not workQueueLock.acquire(False):  # aquire returns false if queue is locked
-                        if aydThread.isAlive():
-                            webThread.sendData('Running\n')
-                            break
-                        else:
-                            webThread.sendData('Not Running\n')
-                            break
-
+            if recv[0] == "WEB":
+                if recv[1] == "OPENSITE":
+                    # may have to thread
+                    webbrowser.open(webSite)
+                if recv[1] == "RESTART":
+                    aydProc.terminate()
+                    aydProc.start()
 
 if __name__ == "__main__":
 
@@ -283,8 +273,9 @@ if __name__ == "__main__":
     try:
         mainThread.start()
         mainThread.join()
+        #start()
     except Exception as e:
         print(traceback.traceback.format_exc())
         print(e)
-    print("Why am i here")
+    print("Fully Exited Program...")
     sys.exit(1)

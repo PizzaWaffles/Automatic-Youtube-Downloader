@@ -1,30 +1,49 @@
 import pystray
 from PIL import Image
+import os
+from tendo import singleton
 
+def on_activate(icon, command, conn):
+    if command == "quit":
+        conn.send(["AYD", "TERMINATE"])
+        #print('KILLAYD')
 
-def on_activate(icon, quit):
-    if quit:
-        print('KILLAYD')
         icon.stop()
-        #exit(1)
-    else:
-        print('doing nothing...')
+        exit(1)
+    if command == "restart":
+        conn.send(["AYD", "RESTART"])
 
-# Create a Tray Icon
-trayIcon = pystray.Icon(
-    'Automatic Youtube Downloader',
-    icon=Image.open("icon.png"),
-    menu=pystray.Menu(
-        pystray.MenuItem(
-            'Print',
-            lambda icon: on_activate(icon, False)
-        ),
-        pystray.Menu.SEPARATOR,
-        pystray.MenuItem(
-            'Quit',
-            lambda icon: on_activate(icon, True)
+    if command == "web":
+        conn.send(["WEB", "OPENSITE"])
+
+
+
+def startTray(conn, args):
+
+    # Create a Tray Icon
+    trayIcon = pystray.Icon(
+        'Automatic Youtube Downloader',
+        icon=Image.open("icon.png"),
+        menu=pystray.Menu(
+            pystray.MenuItem(
+                'Open Webpage',
+                lambda icon: on_activate(icon, "web", conn)
+            ),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem(
+                'Restart AYD',
+                lambda icon: on_activate(icon, "restart", conn)
+            ),
+            pystray.MenuItem(
+                'Quit',
+                lambda icon: on_activate(icon, "quit", conn)
+            )
         )
     )
-)
 
-trayIcon.run()
+    trayIcon.run()
+
+
+#if __name__ == '__main__':
+#    start()
+

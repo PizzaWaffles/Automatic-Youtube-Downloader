@@ -1,0 +1,13 @@
+#!C:\Python35\python.exe
+import glob
+import sys
+import os
+
+lib = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "lib"))
+
+sys.path.insert(0, lib)
+
+if __name__ == "__main__":
+    from poetry.console import main
+
+    main()

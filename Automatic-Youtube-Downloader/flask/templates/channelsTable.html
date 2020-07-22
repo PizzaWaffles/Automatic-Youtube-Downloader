@@ -1,0 +1,17 @@
+<div class="table-wrapper">
+    <form method="post" action="{{ url_for('channelsHandler') }}">
+        <div class="row gtr-uniform gtr-50">
+            {% for item in dataList %}
+            <div class="col-4 col-12-xsmall">
+            {{ item|safe }}
+            </div>
+            {% endfor %}
+            
+            <div class="col-12">
+                <input type="submit" name="action" value="Save" class="primary" />
+                <input type="submit" name="action" value="Add" />
+                <input type="submit" name="action" value="Reset" />
+            </div>
+        </div>
+    </form>
+</div> 

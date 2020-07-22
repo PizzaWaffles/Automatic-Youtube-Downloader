@@ -8,7 +8,7 @@ This was designed to work with Plex and this [plugin](https://github.com/ZeroQI/
 
 This program now works with this [plugin](https://bitbucket.org/mjarends/extendedpersonalmedia-agent.bundle/overview) and this [Scanner](https://bitbucket.org/mjarends/plex-scanners/overview) this plugin and scanner is more stable and seems to work more often. But doesn't have specific youtube data (like descriptions and tags)
 
-Please download and install both if using with Plex.
+Please download a Scanner and Plugin if using with Plex.
 
 ## Install
 
@@ -58,7 +58,7 @@ It will then take you through some config options
 Use this command to run:
 
 ```
-python3 main.py
+python3 StartAutomaticYoutubeDownloader.py
 ```
 
 ## Updating
@@ -74,15 +74,23 @@ To update from version 0.1, do the above then edit data/config change the `VIDEO
     1440p
     2160p
     4320p
-
+    
 So if i wanted 4k videos the line would look line 
 
 `VIDEO_FORMAT=2160p`
 
+#### To version 2.0
+Lots of changes here, added a flask web frontend, tray icon, and threading to try to restart threads that died
+
+The running of the version is different, before you could set the scheduling mode to ONCE and have crontab run it on a set schedule
+this is no longer necessary the program has a scheduler bultin, so now the schedule modes are time of day and delay
+
+Again to update to this version just copy over your data/ directory 
+
 ## Usage
 
 ```
-python3 main.py [OPTIONS]
+python3 StartAutomaticYoutubeDownloader.py [OPTIONS]
 ```
 
 ### Options
@@ -121,7 +129,7 @@ The file must have one option per line(doesn't matter what order), and must not 
     SCHEDULING_MODE             Mode for when to run things
                                     Options:
                                         TIME_OF_DAY
-                                        RUN_ONCE
+                                        ~~RUN_ONCE~~(Deprecated)
                                         DELAY
 
 #### Example config file for Extended Agent
@@ -166,6 +174,16 @@ The only wildcard supported at the moment is *. The default behavior without wil
 ## WIP Features
 
 Will no longer add features, but will fix bugs as they arise
+
+I lied due to Covid I've had some time and added some features in V2.0
+
+TODO:
+* Better setup method
+* More testing
+* Add logs to web frontend
+* Verify user input on frontend
+* Add different config file editing to web
+
 
 ## Issues
 

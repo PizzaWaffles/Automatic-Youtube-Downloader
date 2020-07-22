@@ -48,18 +48,16 @@ Temporary Items
 
 # Custom
 .*/
-temp/
-data/
-Download/
-venv/
-myVenv/
-ImageEditor
-error.log
-setup.log
-main.log
-gui.py
-poetry/bin/
-poetry/lib/
+Automatic-Youtube-Downloader/temp/
+Automatic-Youtube-Downloader/data/
+Automatic-Youtube-Downloader/Download/
+Automatic-Youtube-Downloader/error.log
+Automatic-Youtube-Downloader/setup.log
+Automatic-Youtube-Downloader/main.log
+Automatic-Youtube-Downloader/poetry/bin/
+Automatic-Youtube-Downloader/poetry/lib/
+Automatic-Youtube-Downloader/poetry/lib-backup
+Automatic-Youtube-Downloader/poetry.lock
+Automatic-Youtube-Downloader/logs/
+Automatic-Youtube-Downloader/__pycache__
 poetry.lock
-flask/
-logs/

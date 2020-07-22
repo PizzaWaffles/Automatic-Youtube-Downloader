@@ -1,0 +1,18 @@
+<div class="table-wrapper">
+    <form method="post" action="{{ url_for('configHandler') }}">
+        <div class="row gtr-uniform gtr-50">
+            {% for item in configList %}
+            <div class="col-6 col-12-xsmall">
+                {{ item|safe }}
+            </div>   
+            {% endfor %}
+            
+            <div class="col-12">
+                <input type="submit" name="action" value="Save" class="primary" />
+                <input type="reset" name="action" value="Reset" />
+            </div>
+        </div>
+
+
+    </form>
+</div>

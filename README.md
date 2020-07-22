@@ -1,3 +1,5 @@
+![Build Status](https://api.travis-ci.com/PizzaWaffles/Automatic-Youtube-Downloader.svg?branch=master)
+
 # YouTube Downloader
 
 This python program periodically checks youtube for new videos in a users subscription feed. It will then move it to a designated folder with a video thumbnail and a channel poster. 
@@ -16,10 +18,24 @@ Download python [here](https://www.python.org/ftp/python/3.5.4/python-3.5.4.exe)
 
 **When installing make sure to click 'Add to PATH'**
 
+Run this in the command prompt in the root directory of the program
+
+```
+pip3 install -r requirements.txt
+```
+
+**Linux/Unix systems, must install ffmpeg**
+
+Run this to install ffmpeg
+
+```sudo apt-get install ffmpeg```
+
+## Setup
+
 After installing python open a command prompt or terminal and copy this
 
 ```
-python setup.py
+python3 setup.py
 ```
 
 If its your first time installing select '1', it will walk you through the process
@@ -36,6 +52,14 @@ If you have a lot of subscriptions (like me) then I recommend chosing to include
 If you have a fairly smallish amount of subscriptions then you can chose the 'select' opiton and it will ask you for each channel if you want to include it or not
 
 It will then take you through some config options
+
+## Running
+
+Use this command to run:
+
+```
+python3 main.py
+```
 
 ## Updating
 
@@ -58,7 +82,7 @@ So if i wanted 4k videos the line would look line
 ## Usage
 
 ```
-python main.py [OPTIONS]
+python3 main.py [OPTIONS]
 ```
 
 ### Options
@@ -100,6 +124,28 @@ The file must have one option per line(doesn't matter what order), and must not 
                                         RUN_ONCE
                                         DELAY
 
+#### Example config file for Extended Agent
+
+    API_KEY=[REDACTED]
+    SCHEDULING_MODE=DELAY
+    SCHEDULING_MODE_VALUE=30
+    NUM_VIDEOS=3
+    DESTINATION_FOLDER=F:/Plex/Youtube/
+    DESTINATION_FORMAT=%NAME
+    FILE_FORMAT=%NAME - %UPLOAD_DATE - %TITLE
+    VIDEO_FORMAT=1080p
+    
+#### Example config for ASS Agent
+
+    API_KEY=[REDACTED]
+    SCHEDULING_MODE=DELAY
+    SCHEDULING_MODE_VALUE=30
+    NUM_VIDEOS=3
+    DESTINATION_FOLDER=F:/Plex/Youtube/
+    DESTINATION_FORMAT=%NAME [Youtube-%CHANNEL_ID]
+    FILE_FORMAT=%TITLE - [%VIDEO_ID]
+    VIDEO_FORMAT=best
+
 ## Filters
 
 With the custom filters you can cherry pick which videos you would like to download automatically, there is 2 modes for the filters to work either "allow-only" or "deny-only" mode
@@ -119,15 +165,11 @@ The only wildcard supported at the moment is *. The default behavior without wil
 
 ## WIP Features
 
-
+Will no longer add features, but will fix bugs as they arise
 
 ## Issues
 
-- If you get "Failed to download please update youtube-dl with 
-
-    `pip uninstall youtube-dl` 
-
-    `pip install youtube-dl`
+-
 
 Any other issues please report on Github if you would like them fixed or looked at.
 

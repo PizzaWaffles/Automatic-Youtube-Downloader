@@ -1,7 +1,6 @@
 language: python
 python:
     - "3.5"
-install:
-    - pip install -r requirements.txt
+install: skip
 script:
     - python setup.py < ./tests/setupTestTravis.txt

@@ -260,7 +260,6 @@ def get_icons(channel, chid, overwrite=False):
     write("Complete.", GREEN)
 
 
-
 # src is directory plus filename
 # dst is directory with or without filename
 def safecopy(src, dst):
@@ -422,7 +421,7 @@ def slugify(value):
     return value
 
 
-def main(runs):
+def main(my_sch):
     global NUM_VIDEOS
     global DESTINATION_FOLDER
     global API_KEY
@@ -454,7 +453,7 @@ def main(runs):
         indexofid = xmlurl[i].find("id=")
         channelIDlist[i] = xmlurl[i][indexofid + 3:]
 
-    if runs == 1:
+    if my_sch.getNumRuns() == 1:
         get_icons(xmltitle, channelIDlist)
 
     for i in range(0, len(xmltitle)):  # for every channel
@@ -633,6 +632,7 @@ def main(runs):
                                 video_id = info_dict.get("id", None)
                                 video_title = info_dict.get("title", None)
                                 video_date = info_dict.get("upload_date", None)
+                                uploader = info_dict.get("uploader", None)
                                 is_live = info_dict.get("is_live", None)
                                 if 'entries' in info_dict:
                                     is_live = info_dict['entries'][0]["is_live"]
@@ -666,26 +666,28 @@ def main(runs):
                                 logVariables()
 
                     if not skip_move:
-                        destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
-                        destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
-
                         subscription_source_dir = 'Download/' + uploader + '/'
+                        subscription_destination_dir = os.path.join(DESTINATION_FOLDER, uploader)
                         logging.debug("subscription_source_dir is %s" % subscription_source_dir)
-                        logging.debug("subscription_destination_dir is %s" % destinationDir)
+                        logging.debug("subscription_destination_dir is %s" % subscription_destination_dir)
 
-                        if not os.path.exists(destinationDir):
+                        # destinationDir = parseFormat(DESTINATION_FORMAT, uploader, upload_date, title, channelID, id)
+                        # destinationDir = os.path.join(DESTINATION_FOLDER, destinationDir)
+
+                        if not os.path.exists(DESTINATION_FOLDER + uploader):
                             logging.info(
-                                "Creating uploader destination directory for %s" % destinationDir)
-                            os.makedirs(destinationDir)
+                                "Creating uploader destination directory for %s" % subscription_destination_dir)
+                            os.makedirs(subscription_destination_dir)
                         try:
                             logging.info("Now moving content from %s to %s" % (
-                            subscription_source_dir, destinationDir))
+                            subscription_source_dir, subscription_destination_dir))
 
                             for filename in os.listdir(subscription_source_dir):
                                 logging.info("Checking file %s" % filename)
                                 source_to_get = os.path.join(subscription_source_dir, filename)
-                                logging.info("Moving file %s to %s" % (source_to_get, destinationDir))
-                                safecopy(source_to_get, destinationDir)
+                                where_to_place = subscription_destination_dir
+                                logging.info("Moving file %s to %s" % (source_to_get, where_to_place))
+                                safecopy(source_to_get, where_to_place)
                                 # shutil.move(os.path.join(subscription_source_dir, filename), subscription_destination_dir)
 
                             shutil.rmtree(subscription_source_dir, ignore_errors=True)

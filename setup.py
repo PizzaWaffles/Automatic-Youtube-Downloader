@@ -8,6 +8,8 @@ import subprocess
 import xml.sax.saxutils
 import logging
 import getopt
+from colorama import init
+from colorama import Fore, Back, Style
 
 # support for python 3 and 2
 if sys.version_info[0] == 3:
@@ -45,24 +47,19 @@ CONFIGURATIONS_HUMAN_READABLE = {
     'VIDEO_FORMAT': 'Quality setting'
 }
 
-# Colorizer constants
-BLACK = 30
-RED = 31
-GREEN = 32
-YELLOW = 33
-BLUE = 34
-MAGENTA = 35
-CYAN = 36
-WHITE = 37
-BLUE = CYAN
-LIGHT_BLUE = 94
+init()  # start colorizer
+RED = Fore.RED
+GREEN = Fore.GREEN
+BLUE = Fore.BLUE
+MAGENTA = Fore.MAGENTA
+LIGHT_BLUE = Fore.LIGHTCYAN_EX
 
 
 def write(s, color=None):
     if color is None:
         print(s)
     else:
-        print('\033[' + str(color) + 'm' + s + '\033[0m  ')
+        print(color + s + Style.RESET_ALL)
 
 
 # this should be deprecated in favor of logging.* calls
@@ -85,7 +82,7 @@ def install_dependencies():
         homeDirectory = os.getcwd()
         pythonPath = sys.executable
         write("Python Path: " + pythonPath)
-        getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "get_poetry.py")]
+        getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "get_poetry.py"), "--version", "0.12.11"]
         runPoetryCmd = [os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
         if sys.platform.startswith("win"):
             write('Using Windows System Settings')
@@ -126,7 +123,7 @@ def format_youtube_data():
         if not TESTING:
             get_input("Click enter to continue.....")
 
-        if os.path.exists(os.path.join("data" + subFile)):
+        if os.path.exists(os.path.join("data", subFile)):
             write("\nFile Found\n\n")
             logging.info(subFile + " was found")
             setup_not_complete = False

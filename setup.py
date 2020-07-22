@@ -79,6 +79,7 @@ def get_input(msg, color=LIGHT_BLUE):
 
 
 def install_dependencies():
+    logging.debug("install_dependencies function called")
     try:
         write("Checking Dependencies....", BLUE)
         homeDirectory = os.getcwd()
@@ -113,6 +114,7 @@ def install_dependencies():
 
 
 def format_youtube_data():
+    logging.debug("format_youtube_data function called")
     api_key = ""
     setup_not_complete = True
     subFile = "subscription_manager.xml"
@@ -120,7 +122,7 @@ def format_youtube_data():
         write("\n\nSetting up Youtube configs")
         write("Please goto https://www.youtube.com/subscription_manager")
         write("On the bottom of the page click 'Export Subscriptions'")
-        write("Put that file in the data directory so it looks like " + subFile)
+        write("Put that file in the data directory so it looks like data/" + subFile)
         if not TESTING:
             get_input("Click enter to continue.....")
 
@@ -132,6 +134,19 @@ def format_youtube_data():
             write("File Not Found!! Please make sure you have it in the correct directory and its named correctly", RED)
             logging.warning(subFile + " was NOT found")
             logging.debug("data folder contents:\n" + str(glob.glob("data/*")))
+
+
+def get_API_key_config(cFile):
+    logging.debug("get_API_key_config function called")
+    if os.path.isfile(cFile):
+        f = open(cFile)
+        l = f.readlines()
+        for line in l:
+            if line.split("=")[0] == "API_KEY":
+                return line.split("=")[1]
+
+    write("Config file does not exist please run setup from the start", RED)
+    return None
 
 
 def get_API_key():
@@ -168,8 +183,13 @@ def get_API_key():
 
 
 def channel_selection(dataFile, inputFile="data/subscription_manager.xml", titleList=None, idList=None):
+    logging.debug("channel_selection function called")
     if titleList is not None:
         inputFile = None
+    else:
+        titleList = []
+        idList = []
+
 
     import listparser as lp
     logging.debug("Channel_selection started")
@@ -204,13 +224,15 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
     # logging.debug("Parsing " + inputFile)
     file.write('<opml version="1.1">\n<body>\n')
 
-    if titleList is None:
+    if inputFile is not None:
         d = lp.parse(inputFile)
         l = d.feeds
 
         for count, channel in enumerate(l):
-            titleList[count] = channel.title
-            idList[count] = channel.url
+            #titleList[count] = channel.title
+            #idList[count] = channel.url
+            titleList.append(channel.title)
+            idList.append(channel.url)
     else:
         for count, channel in enumerate(idList):
             idList[count] = "https://www.youtube.com/feeds/videos.xml?channel_id=" + idList[count]
@@ -263,6 +285,7 @@ def channel_selection(dataFile, inputFile="data/subscription_manager.xml", title
 
 
 def edit_config(configPath):
+    logging.debug("edit_config function called")
     if not os.path.isfile(configPath):
         logging.info(configPath + " not found!!")
         write(configPath + " not found!!", RED)
@@ -482,6 +505,7 @@ def setup_config(api_key, configFile):
 
 
 def add_channel(dataFile):
+    logging.debug("add_channel function called")
     chName = get_input("\n\nPlease enter the channel Name:")
     chID = get_input("Please enter the channel ID:")
     get_input("\nYou entered\nName:" + chName + "\nChannel ID:" + chID + "\nIf this is correct press enter...")
@@ -514,29 +538,49 @@ def add_channel(dataFile):
         write("Invalid ID! Try again please", RED)
 
 
-def get_sub_list(api_key):
-    write("Please login to your youtube account in a browser, click on your account and click 'My Channel'\n"
-          "Look at the address bar, copy everything after channel/, it should start with UC\n"
-          "This is the youtube account that will be scraped for channel subscriptions\n"
-          "(Warning this account must be the same Google account used to sign up for the API key.)")
+def get_sub_list(api_key, configFile=None):
+    logging.debug("get_sub_list function called")
+    my_chid = ""
+    if configFile is not None:
+        if os.path.isfile(configFile):
+            f = open(configFile)
+            l = f.readlines()
+            for line in l:
+                if line.split("=")[0] == "MY_CHANNEL_ID":
+                    write("Using My Channel ID from config file")
+                    my_chid = line.split("=")[1]
+            f.close()
 
     if TESTING:
         print("Using Travis channel ID")
         my_chid = str(os.environ.get('MYCHID'))
     else:
-        my_chid = get_input(
-            "Please paste that in here(If you do not have a Youtube account just click enter): ")
+        while True:
+            if my_chid is "":
+                write("Please login to your youtube account in a browser, click on your account and click 'My Channel'\n"
+                      "Look at the address bar, copy everything after channel/, it should start with UC\n"
+                      "This is the youtube account that will be scraped for channel subscriptions\n"
+                      "(Warning this account must be the same Google account used to sign up for the API key.)\n"
+                      "Or leave blank if you want to manually grab the subscription file.")
+                my_chid = get_input(
+                    "Please paste that in here: ")
+            else:
+                break
 
     try:
         if my_chid.strip() is "":
-            # TODO Add functionallity for no youtube channel
-            write("Please put ")
+            return [None, None]
 
         my_chid = my_chid.split("?")[0]
         url_data = urlopen(
             'https://www.googleapis.com/youtube/v3/subscriptions?channelId='
             + my_chid + '&part=snippet%2CcontentDetails&maxResults=50&key=' + api_key +
             '')
+
+        if configFile is not None:
+            file = open(configFile, 'a')
+            file.write("\nMY_CHANNEL_ID="+my_chid + '\n')
+            file.close()
 
         data = url_data.read()
         data = json.loads(data.decode('utf-8'))
@@ -556,9 +600,8 @@ def get_sub_list(api_key):
                 next_page_token = data['nextPageToken']
 
                 url_data = urlopen(
-                    'https://www.googleapis.com/youtube/v3/subscriptions?channelId=' + my_chid +
-                    '&part=snippet%2CcontentDetails&maxResults=50&pageToken=' + next_page_token + '&key=' + api_key +
-                    '&order=alphabetical')
+                    'https://www.googleapis.com/youtube/v3/subscriptions?&pageToken=' + next_page_token +
+                    '&channelId=' + my_chid + '&part=snippet%2CcontentDetails&maxResults=50&key=' + api_key)
 
                 data = url_data.read()
                 data = json.loads(data.decode('utf-8'))
@@ -608,13 +651,23 @@ def main(configFile, dataFile, skipDep):
                 install_dependencies()
             api_key = get_API_key()
             titleList, idList = get_sub_list(api_key)
-            channel_selection(dataFile, "", titleList, idList)
+            if titleList is None:
+                format_youtube_data()
+                channel_selection(dataFile, "data/subscription_manager.xml")
+            else:
+                channel_selection(dataFile, "", titleList, idList)
             setup_config(api_key, configFile)
             write('\n\n\n----------This completes the setup you may now exit-----------\n', GREEN)
             if TESTING:
                 exit(0)
         elif menuSelection == "2":
-            channel_selection(dataFile)
+            api_key = get_API_key_config(configFile)
+            titleList, idList = get_sub_list(api_key, configFile)
+            if titleList is None:
+                format_youtube_data()
+                channel_selection(dataFile, "data/subscription_manager.xml")
+            else:
+                channel_selection(dataFile, "", titleList, idList)
         elif menuSelection == "3":
             install_dependencies()
         elif menuSelection == "4":

@@ -10,6 +10,7 @@ import json
 from datetime import datetime
 import time
 import sys, getopt
+from pprint import pprint
 import logging
 import re
 import fnmatch
@@ -28,7 +29,8 @@ else:
     print("\nError, please install python3.\n")
     exit(1)
 
-VERBOSE = False
+# Start Colorizer
+init()
 
 # GLOBAL VARS
 NUM_VIDEOS = 0
@@ -47,16 +49,11 @@ CURRENT_STATUS = "Starting"
 #PARENT_CONNECTION
 
 # Colorizer constants
-BLACK = 30
-RED = 31
-GREEN = 32
-YELLOW = 33
-BLUE = 34
-MAGENTA = 35
-CYAN = 36
-WHITE = 37
-BLUE = CYAN
-LIGHTBLUE = 94
+RED = Fore.RED
+GREEN = Fore.GREEN
+BLUE = Fore.CYAN
+MAGENTA = Fore.MAGENTA
+LIGHT_BLUE = Fore.LIGHTCYAN_EX
 
 # No longer using codes in config file, use human readable tags ex '1080p'
 VIDEO_QUALITY_LIST = [
@@ -69,7 +66,7 @@ def write(s, color=None):
     if color is None:
         print(s)
     else:
-        print('\033[' + str(color) + 'm' + s + '\033[0m  ')
+        print(color + s + Style.RESET_ALL)
 
 
 def load_configs(configFile):
@@ -163,36 +160,23 @@ def check_dependencies():
         homeDirectory = os.getcwd()
         pythonPath = sys.executable
         write("Python Path: " + pythonPath)
-        getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "get_poetry.py")]
-        runPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
+        getPoetryCmd = [pythonPath, os.path.join(homeDirectory, "poetry", "get_poetry.py"), "--version", "0.12.11"]
+        runPoetryCmd = [os.path.join(homeDirectory, "poetry", "bin", "poetry"), "update"]
         if sys.platform.startswith("win"):
-            print('Using Windows System Settings')
-            if VERBOSE:
-                print("Verbose settings.")
-                proc = subprocess.Popen(getPoetryCmd, shell=True)
-                proc.wait()
-
-                #proc = subprocess.Popen(runPoetryCmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                proc = subprocess.Popen(runPoetryCmd, shell=True)
-                proc.wait()
-
-            else:
-                sys.stdout.flush()
-                subprocess.run(getPoetryCmd, stdout=None, shell=True)
-                sys.stdout.flush()
-                subprocess.run(runPoetryCmd, stdout=None, shell=True)
-                sys.stdout.flush()
-        else:  # TODO test STDout functions in linux
+            write('Using Windows System Settings')
+            subprocess.run(getPoetryCmd, shell=True)
+            subprocess.run(runPoetryCmd, shell=True)
+        else:
             sys.stdout.flush()
             proc = subprocess.call(getPoetryCmd)
             if proc > 0:
-                print("An error occurred with downloading poetry")
+                write("An error occurred with downloading poetry", RED)
                 exit(1)
 
             sys.stdout.flush()
             proc = subprocess.call(runPoetryCmd)
             if proc > 0:
-                print("An error occurred with running poetry")
+                write("An error occurred with running poetry", RED)
                 exit(1)
 
     except Exception as e:
@@ -381,13 +365,13 @@ class scheduling:
 
     def run(self):
 
-        #print("Starting on run number %s" % self.number_of_runs_completed)
-        #logging.info("Starting on run number %s" % self.number_of_runs_completed)
+        print("Starting on run number %s" % self.number_of_runs_completed)
+        logging.info("Starting on run number %s" % self.number_of_runs_completed)
         if SCHEDULING_MODE == "TIME_OF_DAY":
-            #logging.info("Evaluating time of day run for %s schedule mode" % SCHEDULING_MODE_VALUE)
+            logging.info("Evaluating time of day run for %s schedule mode" % SCHEDULING_MODE_VALUE)
             if self.did_i_just_complete_run:
                 self.minutes_to_wait = 24 * 60
-                #logging.debug("  Just completed run, need to wait %s minutes" % self.minutes_to_wait)
+                logging.debug("  Just completed run, need to wait %s minutes" % self.minutes_to_wait)
                 self.did_i_just_complete_run = False
             else:
                 self.minutes_to_wait = (SCHEDULING_MODE_VALUE - datetime.now().hour) * 60
@@ -398,37 +382,30 @@ class scheduling:
                 print("  First scheduled run set for %s minutes from now" % self.minutes_to_wait)
 
         elif SCHEDULING_MODE == "RUN_ONCE":
-            #logging.info("Evaluating run once schedule mode")
+            logging.info("Evaluating run once schedule mode")
             if self.did_i_just_complete_run:
-                #logging.info("  Just completed run, ending")
-                sys.exit(1)
+                logging.info("  Just completed run, ending")
+                sys.exit(0)
                 # break
-            #else:
-                #logging.info("  Starting run once")
+            else:
+                logging.info("  Starting run once")
 
         elif SCHEDULING_MODE == "DELAY":
-            #logging.info("Evaluating delay schedule mode")
+            logging.info("Evaluating delay schedule mode")
             if self.did_i_just_complete_run:
                 self.minutes_to_wait = SCHEDULING_MODE_VALUE
-                #logging.info("  Next run in %s minutes" % self.minutes_to_wait)
-            #else:
-                #logging.info("  First run, doing it now")
+                logging.info("  Next run in %s minutes" % self.minutes_to_wait)
+            else:
+                logging.info("  First run, doing it now")
 
         else:
-            #logging.info("Unknown SCHEDULING_MODE found %s" % SCHEDULING_MODE)
+            logging.info("Unknown SCHEDULING_MODE found %s" % SCHEDULING_MODE)
             raise Exception("Unknown SCHEDULING_MODE found %s" % SCHEDULING_MODE)
-            exit(-1)
+            exit(2)
+            # break
 
-        #logging.info("Sleeping for %s minutes..." % self.minutes_to_wait)
-        for i in range(0, self.minutes_to_wait*60):
-            time.sleep(i)
-
-            '''try:
-                line = myQueue.get_nowait()
-            except Empty:
-                print()
-            else:
-                parentCode(line)'''
+        logging.info("Sleeping for %s minutes..." % self.minutes_to_wait)
+        time.sleep(self.minutes_to_wait * 60)
 
         self.number_of_runs_completed += 1
         self.did_i_just_complete_run = True
@@ -553,34 +530,34 @@ def main(runs):
 
                         usable_format_code_audio = '(bestaudio[ext=m4a]/bestaudio)'
                         usable_format_code_video = '(bestvideo[vcodec^=av01][height>=2160][fps>30]/' \
-                                                   'bestvideo[vcodec=vp9.2][height>=2160][fps>30]/' \
-                                                   'bestvideo[vcodec=vp9][height>=2160][fps>30]/' \
-                                                   'bestvideo[vcodec^=av01][height>=2160]/' \
-                                                   'bestvideo[vcodec=vp9.2][height>=2160]/' \
-                                                   'bestvideo[vcodec=vp9][height>=2160]/' \
-                                                   'bestvideo[height>=2160]/' \
-                                                   'bestvideo[vcodec^=av01][height>=1440][fps>30]/' \
-                                                   'bestvideo[vcodec=vp9.2][height>=1440][fps>30]/' \
-                                                   'bestvideo[vcodec=vp9][height>=1440][fps>30]/' \
-                                                   'bestvideo[vcodec^=av01][height>=1440]/' \
-                                                   'bestvideo[vcodec=vp9.2][height>=1440]/' \
-                                                   'bestvideo[vcodec=vp9][height>=1440]/' \
-                                                   'bestvideo[height>=1440]/' \
-                                                   'bestvideo[vcodec^=av01][height>=1080][fps>30]/' \
-                                                   'bestvideo[vcodec=vp9.2][height>=1080][fps>30]/' \
-                                                   'bestvideo[vcodec=vp9][height>=1080][fps>30]/' \
-                                                   'bestvideo[vcodec^=av01][height>=1080]/' \
-                                                   'bestvideo[vcodec=vp9.2][height>=1080]/' \
-                                                   'bestvideo[vcodec=vp9][height>=1080]/' \
-                                                   'bestvideo[height>=1080]/' \
-                                                   'bestvideo[vcodec^=av01][height>=720][fps>30]/' \
-                                                   'bestvideo[vcodec=vp9.2][height>=720][fps>30]/' \
-                                                   'bestvideo[vcodec=vp9][height>=720][fps>30]/' \
-                                                   'bestvideo[vcodec^=av01][height>=720]/' \
-                                                   'bestvideo[vcodec=vp9.2][height>=720]/' \
-                                                   'bestvideo[vcodec=vp9][height>=720]/' \
-                                                   'bestvideo[height>=720]/' \
-                                                   'bestvideo)'
+                                              'bestvideo[vcodec=vp9.2][height>=2160][fps>30]/' \
+                                              'bestvideo[vcodec=vp9][height>=2160][fps>30]/' \
+                                              'bestvideo[vcodec^=av01][height>=2160]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=2160]/' \
+                                              'bestvideo[vcodec=vp9][height>=2160]/' \
+                                              'bestvideo[height>=2160]/' \
+                                              'bestvideo[vcodec^=av01][height>=1440][fps>30]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=1440][fps>30]/' \
+                                              'bestvideo[vcodec=vp9][height>=1440][fps>30]/' \
+                                              'bestvideo[vcodec^=av01][height>=1440]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=1440]/' \
+                                              'bestvideo[vcodec=vp9][height>=1440]/' \
+                                              'bestvideo[height>=1440]/' \
+                                              'bestvideo[vcodec^=av01][height>=1080][fps>30]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=1080][fps>30]/' \
+                                              'bestvideo[vcodec=vp9][height>=1080][fps>30]/' \
+                                              'bestvideo[vcodec^=av01][height>=1080]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=1080]/' \
+                                              'bestvideo[vcodec=vp9][height>=1080]/' \
+                                              'bestvideo[height>=1080]/' \
+                                              'bestvideo[vcodec^=av01][height>=720][fps>30]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=720][fps>30]/' \
+                                              'bestvideo[vcodec=vp9][height>=720][fps>30]/' \
+                                              'bestvideo[vcodec^=av01][height>=720]/' \
+                                              'bestvideo[vcodec=vp9.2][height>=720]/' \
+                                              'bestvideo[vcodec=vp9][height>=720]/' \
+                                              'bestvideo[height>=720]/' \
+                                              'bestvideo)'
 
                         try:
                             if FORMAT.split(" ")[0] == 'best':
@@ -702,7 +679,7 @@ def main(runs):
                             os.makedirs(destinationDir)
                         try:
                             logging.info("Now moving content from %s to %s" % (
-                                subscription_source_dir, destinationDir))
+                            subscription_source_dir, destinationDir))
 
                             for filename in os.listdir(subscription_source_dir):
                                 logging.info("Checking file %s" % filename)

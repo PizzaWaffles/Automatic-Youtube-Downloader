@@ -8,8 +8,6 @@ import subprocess
 import xml.sax.saxutils
 import logging
 import getopt
-from colorama import init
-from colorama import Fore, Back, Style
 
 # support for python 3 and 2
 if sys.version_info[0] == 3:
@@ -51,19 +49,23 @@ CONFIGURATIONS_HUMAN_READABLE = {
 DATA_FOLDER_LOCATION = "Automatic-Youtube-Downloader/data/"
 LOG_FOLDER_LOCATION = "Automatic-Youtube-Downloader/logs/"
 
-init()  # start colorizer
-RED = Fore.RED
-GREEN = Fore.GREEN
-BLUE = Fore.BLUE
-MAGENTA = Fore.MAGENTA
-LIGHT_BLUE = Fore.LIGHTCYAN_EX
+# Colorizer constants
+BLACK = 30
+RED = 31
+GREEN = 32
+YELLOW = 33
+MAGENTA = 35
+CYAN = 36
+WHITE = 37
+BLUE = CYAN
+LIGHT_BLUE = 94
 
 
 def write(s, color=None):
     if color is None:
         print(s)
     else:
-        print(color + s + Style.RESET_ALL)
+        print('\033[' + str(color) + 'm' + s + '\033[0m  ')
 
 
 # this should be deprecated in favor of logging.* calls

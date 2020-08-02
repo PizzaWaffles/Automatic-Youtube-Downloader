@@ -3,4 +3,4 @@ python:
     - "3.5"
 install: skip
 script:
-    - python setup.py < ./tests/setupTestTravis.txt
+    - python Setup.py < ./tests/setupTestTravis.txt

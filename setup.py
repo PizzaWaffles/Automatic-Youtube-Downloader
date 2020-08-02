@@ -198,7 +198,7 @@ def channel_selection(dataFile, inputFile=DATA_FOLDER_LOCATION + "subscription_m
     while loop:
         write("Would you like to select which channels you want to include, or do you want to include all of them?\n"
               "If you include all channels you can remove them manually by editing " + dataFile + " and deleting the"
-                                                                                                  " entire line of the channel you do not want (Choose this option if you have a lot of subscriptions)")
+              " entire line of the channel you do not want (Choose this option if you have a lot of subscriptions)")
         selection = get_input(
             "Enter 'all' to keep all subscriptions or 'select' to select which channels (or 'a' or 's'):").lower()
 
@@ -280,6 +280,74 @@ def channel_selection(dataFile, inputFile=DATA_FOLDER_LOCATION + "subscription_m
     file.close()
     logging.debug("Channels saved to" + dataFile)
     write("\nComplete.")
+
+
+def playlist_selection(dataFile, directCall=False):
+    logging.debug("playlist_selection function called")
+
+    if not directCall:
+        while True:
+            sel = get_input("\nWould you like to add some playlist (y or n)")
+            if sel.lower() == "n":
+                return
+            if sel.lower() == "y":
+                break
+            write("Invalid selection\n", RED)
+
+    logging.debug("Opening " + dataFile + " for writing")
+    file = open(dataFile, 'r')  # Reading and writing no overwrite cursor at beginning
+    currentContents = file.readlines()
+    file.close()
+
+    #currentContents.insert(2, "TESTPLAYLIST\n")
+    fileLineCount = 2
+    while True:
+        while True:
+            sel = get_input("\nPlease enter a name for the playlist")
+            playlistName = sel.strip()
+            if playlistName is "":
+                write("Please enter a name for the playlist\n", RED)
+            elif not playlistName.isalnum():
+                write("Error playlist name not valid\n", RED)
+            else:
+                break
+
+        while True:
+            sel = get_input("\nPlease enter the playlist ID (should start with PL)\n"
+                            "Or just open your playlist and paste the entire URL here")
+            playlistID = sel.strip()
+            if playlistID is "":
+                write("Please enter a id for the playlist\n", RED)
+            elif "list=PL" in playlistID:
+                idx = playlistID.find("list=PL")
+                playlistID = playlistID[idx+5:]
+                write("Using ID: " + str(playlistID))
+                break
+            elif "PL" in playlistID:
+                break
+            else:
+                write("Error please no valid id found", RED)
+        currentContents.insert(fileLineCount, '<outline title="' + xml.sax.saxutils.escape(playlistName)
+                                              + '" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id='
+                                              + xml.sax.saxutils.escape(playlistID) + '"/>\n')
+        exitLoop = False
+        while True:
+            sel = get_input("\nAdd another playlist (y or n)")
+            if sel.lower() == "n":
+                exitLoop = True
+                break
+            elif sel.lower() != "y":
+                write("Error input y or n", RED)
+            else:
+                break
+
+        if exitLoop:
+            break
+
+
+    file = open(dataFile, 'w')
+    file.writelines(currentContents)
+    file.close()
 
 
 def edit_config(configPath):
@@ -633,10 +701,11 @@ def main(configFile, dataFile, skipDep):
         write("""
         1. First Time Install
         2. Channel Selection
-        3. Install Dependencies
-        4. Add Single Channel Manually
-        5. Edit Configurations
-        6. Exit/Quit
+        3. Add Playlist(s) 
+        4. Install Dependencies
+        5. Add Single Channel Manually
+        6. Edit Configurations
+        7. Exit/Quit
         """)
 
         menuSelection = get_input("What would you like to do? ")
@@ -652,6 +721,7 @@ def main(configFile, dataFile, skipDep):
                 channel_selection(dataFile, DATA_FOLDER_LOCATION + "subscription_manager.xml")
             else:
                 channel_selection(dataFile, "", titleList, idList)
+            playlist_selection(dataFile)
             setup_config(api_key, configFile)
             write('\n\n\n----------This completes the setup you may now exit-----------\n', GREEN)
             if TESTING:
@@ -665,12 +735,14 @@ def main(configFile, dataFile, skipDep):
             else:
                 channel_selection(dataFile, "", titleList, idList)
         elif menuSelection == "3":
-            install_dependencies()
+            playlist_selection(dataFile, True)
         elif menuSelection == "4":
-            add_channel(dataFile)
+            install_dependencies()
         elif menuSelection == "5":
-            edit_config(configFile)
+            add_channel(dataFile)
         elif menuSelection == "6":
+            edit_config(configFile)
+        elif menuSelection == "7":
             write("\n Goodbye")
             logging.info("User exited program")
 

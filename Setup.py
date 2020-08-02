@@ -477,7 +477,7 @@ def file_format_selection():
 
 def quality_selection():
     loop = True
-    while (loop):  # TODO Test to make sure correct quality is saved
+    while loop:
         write("Please choose a quality setting:\n", BLUE)
         for i, line in enumerate(VIDEO_QUALITY_LIST[0]):
             write('{}. {}'.format(i + 1, line.strip()))
@@ -490,21 +490,25 @@ def quality_selection():
             write("Please choose a number between 1-" + str(len(VIDEO_QUALITY_LIST[0])) + "\n", BLUE)
 
 
+def check_for_config(configFile):
+    # Returns True if config file found and user wants to overwrite
+    # Returns False if the config file was edited instead
+    if os.path.isfile(configFile):
+        while True:
+            response = get_input("Previous config file found would you like to overwrite it or edit it (o or e):")
+            if response is 'o' or response is 'O':
+                return True
+            elif response is 'e' or response is 'E':
+                edit_config(configFile)
+                return False
+            else:
+                write("Please enter o for overwrite or e for edit.", RED)
+    return True
+
+
 def setup_config(api_key, configFile):
     logging.info("setup_config function called")
     write("\n\n\nSetting up Config file...", BLUE)
-
-    # TODO Add config edit functionality
-    '''if os.path.isfile(configFile):
-        loop = True
-        while loop:
-            response = get_input("Previous config file found would you like to overwrite it or edit it (o or e):")
-            if response is 'o' or response is 'O':
-                loop = False
-            elif response is 'e' or response is 'E':
-                loop = False
-            else:
-                write("Please enter o for overwrite or e for edit.", RED)'''
 
     with open(configFile, 'w') as f:
         f.write("API_KEY=" + api_key + "\n")
@@ -744,15 +748,16 @@ def main(configFile, dataFile, skipDep):
             logging.info("At main menu, user selected option %s" % menuSelection)
             if not skipDep:
                 install_dependencies()
-            api_key = get_API_key()
-            titleList, idList = get_sub_list(api_key)
-            if titleList is None:
-                format_youtube_data()
-                channel_selection(dataFile, DATA_FOLDER_LOCATION + "subscription_manager.xml")
-            else:
-                channel_selection(dataFile, "", titleList, idList)
-            playlist_selection(dataFile)
-            setup_config(api_key, configFile)
+            if check_for_config(configFile):  # Returns true if user wants to overwrite or file not found
+                api_key = get_API_key()
+                titleList, idList = get_sub_list(api_key)
+                if titleList is None:
+                    format_youtube_data()
+                    channel_selection(dataFile, DATA_FOLDER_LOCATION + "subscription_manager.xml")
+                else:
+                    channel_selection(dataFile, "", titleList, idList)
+                playlist_selection(dataFile)
+                setup_config(api_key, configFile)
             write('\n\n\n----------This completes the setup you may now exit-----------\n', GREEN)
             if TESTING:
                 exit(0)

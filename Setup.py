@@ -361,6 +361,10 @@ def edit_config(configPath):
         f = open(configPath, 'r')
         currentLines = f.readlines()
         f.close()
+        if len(currentLines) == 0:
+            write("Error, config file is empty please run main setup\n", RED)
+            break
+
         cLines = []
         for i in range(0, len(currentLines)):
             cLines.append(currentLines[i].strip().split('='))

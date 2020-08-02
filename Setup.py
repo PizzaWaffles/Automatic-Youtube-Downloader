@@ -357,36 +357,133 @@ def edit_config(configPath):
         write(configPath + " not found!!", RED)
         return 0
 
-    # TODO add error processing for empty config file
-    with open(configPath, 'r+') as f:
-        cLines = f.readlines()
-        for i in range(0, len(cLines)):
-            cLines[i] = cLines[i].strip().split('=')
-        loop = True
-        while (loop):
-            write("Please choose a setting to edit:\n", LIGHT_BLUE)
-            for i, line in enumerate(cLines):
-                write('{}.   {}'.format(i + 1, cLines[i][0] + ' = ' + cLines[i][1]))
+    while True:
+        f = open(configPath, 'r')
+        currentLines = f.readlines()
+        f.close()
+        cLines = []
+        for i in range(0, len(currentLines)):
+            cLines.append(currentLines[i].strip().split('='))
 
-            menuSelection = get_input("")
-            if menuSelection == "1":
-                write('\n\nChanging ' + cLines)
+        write("\nPlease choose a setting to edit:", LIGHT_BLUE)
+        for i, line in enumerate(cLines):
+            write('{}.   {}'.format(i + 1, cLines[i][0] + ' = ' + cLines[i][1]))
+        write(str(len(cLines)+1) + ".   Exit")
 
-            elif menuSelection == "2":
-                channel_selection(dataFile)
-            elif menuSelection == "3":
-                install_dependencies()
-            elif menuSelection == "4":
-                add_channel(dataFile)
-            elif menuSelection == "5":
-                edit_config()
-            elif menuSelection == "6":
-                write("\n Goodbye")
-                logging.info("User exited program")
+        menuSelection = get_input("")
 
-                exit()
-            else:
-                write("\n Not Valid Choice Try again")
+        if not menuSelection.isdigit():
+            write("Error, please choose a number", RED)
+            return
+
+        menuSelection = int(menuSelection)
+
+        if menuSelection > len(cLines):
+            break
+
+        write("Warning! Some values you enter will not be verified so make sure they are correct before submitting")
+        if cLines[menuSelection - 1][0] == "DESTINATION_FORMAT":
+            nameConfig = cLines[menuSelection - 1][0]
+            currentLines.pop(menuSelection - 1)
+            currentLines.insert(menuSelection - 1, nameConfig + "=" + destination_format_selection() + "\n")
+
+        elif cLines[menuSelection - 1][0] == "FILE_FORMAT":
+            nameConfig = cLines[menuSelection - 1][0]
+            currentLines.pop(menuSelection - 1)
+            currentLines.insert(menuSelection - 1, nameConfig + "=" + file_format_selection() + "\n")
+        elif cLines[menuSelection - 1][0] == "VIDEO_FORMAT":
+            nameConfig = cLines[menuSelection - 1][0]
+            currentLines.pop(menuSelection - 1)
+            currentLines.insert(menuSelection - 1, nameConfig + "=" + quality_selection() + "\n")
+        else:
+            sel = get_input("Enter new " + cLines[menuSelection-1][0])
+            nameConfig = cLines[menuSelection - 1][0]
+
+            currentLines.pop(menuSelection - 1)
+            currentLines.insert(menuSelection - 1, nameConfig + "=" + sel + "\n")
+
+            write("Setting new " + cLines[menuSelection-1][0] + "\n")
+
+        f = open(configPath, 'w')
+        f.writelines(currentLines)
+        f.close()
+
+
+def destination_format_selection():
+    '''
+    Format for files and destination folders available options:
+        %NAME
+        %UPLOAD_DATE
+        %TITLE
+        %CHANNEL_ID
+        %VIDEO_ID
+    '''
+    loop = True
+    while (loop):
+        response = get_input("Please Choose a destination format:\n"
+                             "1. ASS Scanner Default (%Channel_Name [Youtube-$Channel_ID])\n"
+                             "2. Extended Personal Scanner Default (%Channel_Name)\n"
+            # "3. Custom"
+        )
+
+        logging.info("User selected %s for destination format" % response)
+
+        DESTINATION_FORMAT = ""
+        if response is "1":
+            DESTINATION_FORMAT = "%NAME [Youtube-$CHANNEL_ID]"
+            loop = False
+        elif response is "2":
+            DESTINATION_FORMAT = "%NAME"
+            loop = False
+        # elif response is "3":
+        #    write("HODLLLLLLLLLLLLLL")
+        #    loop = False
+        else:
+            write("Invalid Entry", RED)
+
+        if loop is False:
+            return str('DESTINATION_FORMAT=' + DESTINATION_FORMAT + '\n')
+
+
+def file_format_selection():
+    loop = True
+    while (loop):
+        response = get_input("Please Choose a file format:\n"
+                             "1. ASS Scanner Default (%Video_Tile - [%Video_ID])\n"
+                             "2. Extended Personal Scanner Default (%Channel_Name - %Upload_Date - %Video_Title)\n"
+            # "3. Custom"
+        )
+
+        logging.info("User selected %s for destination format" % response)
+        FILE_FORMAT = ""
+        if response is "1":
+            FILE_FORMAT = "%TITLE - [%VIDEO_ID]"
+            loop = False
+        elif response is "2":
+            FILE_FORMAT = "%NAME - %UPLOAD_DATE - %TITLE"
+            loop = False
+        # elif response is "3":
+        #    write("HODDLLLL")
+        #    loop = False
+        else:
+            write("Invalid Entry", RED)
+        if loop is False:
+            return 'FILE_FORMAT=' + FILE_FORMAT + '\n'
+
+
+def quality_selection():
+    loop = True
+    while (loop):  # TODO Test to make sure correct quality is saved
+        write("Please choose a quality setting:\n", BLUE)
+        for i, line in enumerate(VIDEO_QUALITY_LIST[0]):
+            write('{}. {}'.format(i + 1, line.strip()))
+        response = int(get_input(""))
+        # try:
+        if 0 < int(response) < len(VIDEO_QUALITY_LIST[0]):
+            temp = VIDEO_QUALITY_LIST[0][int(response - 1)].split(" ")[0]
+            return "VIDEO_FORMAT=" + temp + "\n"
+        else:
+            write("Please choose a number between 1-" + str(len(VIDEO_QUALITY_LIST[0])) + "\n", BLUE)
 
 
 def setup_config(api_key, configFile):
@@ -492,80 +589,9 @@ def setup_config(api_key, configFile):
                 logging.error(str(e))
                 write("\nInvalid!!! Please try again.", RED)
 
-        '''
-        Format for files and destination folders available options:
-            %NAME
-            %UPLOAD_DATE
-            %TITLE
-            %CHANNEL_ID
-            %VIDEO_ID
-        '''
-        loop = True
-        while (loop):
-            response = get_input("Please Choose a destination format:\n"
-                                 "1. ASS Scanner Default (%Channel_Name [Youtube-$Channel_ID])\n"
-                                 "2. Extended Personal Scanner Default (%Channel_Name)\n"
-                # "3. Custom"
-            )
-
-            logging.info("User selected %s for destination format" % response)
-
-            DESTINATION_FORMAT = ""
-            if response is "1":
-                DESTINATION_FORMAT = "%NAME [Youtube-$CHANNEL_ID]"
-                loop = False
-            elif response is "2":
-                DESTINATION_FORMAT = "%NAME"
-                loop = False
-            # elif response is "3":
-            #    write("HODLLLLLLLLLLLLLL")
-            #    loop = False
-            else:
-                write("Invalid Entry", RED)
-
-            if loop is False:
-                f.write('DESTINATION_FORMAT=' + DESTINATION_FORMAT + '\n')
-
-        loop = True
-        while (loop):
-            response = get_input("Please Choose a file format:\n"
-                                 "1. ASS Scanner Default (%Video_Tile - [%Video_ID])\n"
-                                 "2. Extended Personal Scanner Default (%Channel_Name - %Upload_Date - %Video_Title)\n"
-                # "3. Custom"
-            )
-
-            logging.info("User selected %s for destination format" % response)
-            FILE_FORMAT = ""
-            if response is "1":
-                FILE_FORMAT = "%TITLE - [%VIDEO_ID]"
-                loop = False
-            elif response is "2":
-                FILE_FORMAT = "%NAME - %UPLOAD_DATE - %TITLE"
-                loop = False
-            # elif response is "3":
-            #    write("HODDLLLL")
-            #    loop = False
-            else:
-                write("Invalid Entry", RED)
-            if loop is False:
-                f.write('FILE_FORMAT=' + FILE_FORMAT + '\n')
-
-        loop = True
-        while (loop):  # TODO Test to make sure correct quality is saved
-            write("Please choose a quality setting:\n", BLUE)
-            for i, line in enumerate(VIDEO_QUALITY_LIST[0]):
-                write('{}. {}'.format(i + 1, line.strip()))
-            response = int(get_input(""))
-            # try:
-            if 0 < int(response) < len(VIDEO_QUALITY_LIST[0]):
-                temp = VIDEO_QUALITY_LIST[0][int(response - 1)].split(" ")[0]
-                f.write("VIDEO_FORMAT=" + temp + "\n")
-                loop = False
-            else:
-                write("Please choose a number between 1-" + str(len(VIDEO_QUALITY_LIST[0])) + "\n", BLUE)
-
-            # except:
-            #    write("Please choose a number between 1-" + str(len(VIDEO_QUALITY_LIST[0])) + "\n", BLUE)
+        f.write(destination_format_selection(f))
+        f.write(file_format_selection(f))
+        f.write(quality_selection(f))
 
 
 def add_channel(dataFile):

@@ -439,7 +439,7 @@ def setup_config(api_key, configFile):
         loop = True
         while (loop):
             response = get_input("Please Choose a destination format:\n"
-                                 "1. ASS Scanner Default (%Channel_Name [Youtube-%Channel_ID])\n"
+                                 "1. ASS Scanner Default (%Channel_Name [Youtube-$Channel_ID])\n"
                                  "2. Extended Personal Scanner Default (%Channel_Name)\n"
                 # "3. Custom"
             )
@@ -448,7 +448,7 @@ def setup_config(api_key, configFile):
 
             DESTINATION_FORMAT = ""
             if response is "1":
-                DESTINATION_FORMAT = "%NAME [Youtube-%CHANNEL_ID]"
+                DESTINATION_FORMAT = "%NAME [Youtube-$CHANNEL_ID]"
                 loop = False
             elif response is "2":
                 DESTINATION_FORMAT = "%NAME"

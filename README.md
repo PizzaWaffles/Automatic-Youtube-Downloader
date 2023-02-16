@@ -16,11 +16,16 @@ To install first download this repo, in the upper right of this repo click 'Down
 
 Download python [here](https://www.python.org/ftp/python/3.5.4/python-3.5.4.exe) currently Python 3.5 is supported but should work with newer versions of python (3.5+)
 
+Or create a virtual environment
+```bash
+python3 -m venv venv
+```
+
 **When installing make sure to click 'Add to PATH'**
 
 Run this in the command prompt in the root directory of the program
 
-```
+```bash
 pip3 install -r requirements.txt
 ```
 
@@ -28,13 +33,15 @@ pip3 install -r requirements.txt
 
 Run this to install ffmpeg
 
-```sudo apt-get install ffmpeg```
+```bash
+sudo apt-get install ffmpeg
+```
 
 ## Setup
 
 After installing python open a command prompt or terminal and copy this
 
-```
+```bash
 python3 setup.py
 ```
 
@@ -57,7 +64,7 @@ It will then take you through some config options
 
 Use this command to run:
 
-```
+```bash
 python3 main.py
 ```
 
@@ -81,7 +88,7 @@ So if i wanted 4k videos the line would look line
 
 ## Usage
 
-```
+```bash
 python3 main.py [OPTIONS]
 ```
 
